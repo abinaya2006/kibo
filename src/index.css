@@ -1,0 +1,31 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;550;700&display=swap');
+
+/* ─── Global Reset for Transparent Overlay Window ─── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html, body, #root, .desktop-pet-app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  background: transparent !important; /* transparent screen overlay */
+}
+
+/* Base custom font configuration */
+body {
+  font-family: 'Outfit', 'Inter', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure mouse events pass through the main canvas area */
+.desktop-pet-app {
+  position: relative;
+  pointer-events: none;
+}

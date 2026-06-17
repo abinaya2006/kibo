@@ -1,0 +1,185 @@
+// ─── FSM States ──────────────────────────────────────────────────────────────
+
+export type PetState =
+  | "idle"
+  | "walking"
+  | "running"
+  | "sleeping"
+  | "playing"
+  | "followingCursor"
+  | "chasingCursor"
+  | "beingDragged"
+  | "happy"
+  | "curious"
+  | "eating"
+  | "thinking"
+  | "yawning"
+  | "stretches"
+  | "listening"
+  | "speaking";
+
+// ─── Mood & Personality ───────────────────────────────────────────────────────
+
+export type PetMood =
+  | "happy"
+  | "excited"
+  | "neutral"
+  | "sleepy"
+  | "bored"
+  | "curious"
+  | "sad"
+  | "hungry";
+
+export type PetPersonality =
+  | "playful"
+  | "curious"
+  | "intelligent"
+  | "lazy"
+  | "energetic"
+  | "sarcastic";
+
+// ─── Emotions ─────────────────────────────────────────────────────────────────
+
+export interface PetEmotions {
+  happiness: number; // 0-100
+  energy: number; // 0-100
+  hunger: number; // 0-100
+  social: number; // 0-100
+  excitement: number; // 0-100
+  boredom: number; // 0-100
+}
+
+// ─── Physics ──────────────────────────────────────────────────────────────────
+
+export interface Vec2 {
+  x: number;
+  y: number;
+}
+
+export interface PetPhysics {
+  position: Vec2;
+  velocity: Vec2;
+  targetPosition: Vec2 | null;
+  speed: number;
+  facing: "left" | "right";
+}
+
+// ─── Canonical Pet Database Model ─────────────────────────────────────────────
+
+export interface PetData {
+  id: string;
+  name: string;
+  species: string;
+  level: number;
+  experience: number;
+  relationship: number; // 0-100
+  personality: PetPersonality;
+  state: PetState;
+  mood: PetMood;
+  emotions: PetEmotions;
+  physics: PetPhysics;
+  lastInteraction: number; // ms
+  createdAt: number; // ms
+}
+
+// ─── Cursor Metrics ───────────────────────────────────────────────────────────
+
+export interface CursorData {
+  position: Vec2;
+  velocity: Vec2;
+  speed: number;
+  distanceToPet: number;
+  angleToPet: number;
+  isNearby: boolean;
+  isCircling: boolean;
+  dwellTime: number;
+  lastSeen: number;
+}
+
+// ─── Database Memory ──────────────────────────────────────────────────────────
+
+export interface DatabaseMessage {
+  id: string;
+  sessionId: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: number;
+}
+
+// ─── Configuration Store ──────────────────────────────────────────────────────
+
+export interface StoredPetData {
+  id: string;
+  name: string;
+  species: string;
+  level: number;
+  experience: number;
+  relationship: number; // 0-100
+  personality: PetPersonality;
+  happiness: number;
+  energy: number;
+  hunger: number; // 0-100
+  social: number; // 0-100
+  mood: PetMood;
+  position: Vec2;
+  lastInteraction: number;
+  createdAt: number;
+}
+
+// ─── API Integrations ─────────────────────────────────────────────────────────
+
+export interface AIProviderConfig {
+  provider: "openai" | "gemini" | "groq";
+  apiKey: string;
+  model: string;
+  temperature: number;
+}
+
+export interface VoiceConfig {
+  ttsProvider: "edge" | "openai";
+  openaiApiKey?: string;
+  voiceId: string; // Voice identity (e.g. En-US-AriaNeural)
+  speed: number; // Speech rate modifier (0.5 to 2)
+  enabled: boolean;
+}
+
+// ─── Electron Context Bridge Interface ────────────────────────────────────────
+
+export interface ElectronAPI {
+  savePet: (data: StoredPetData) => Promise<{ success: boolean }>;
+  loadPet: () => Promise<StoredPetData | null>;
+  deletePet: () => Promise<{ success: boolean }>;
+  setIgnoreMouseEvents: (ignore: boolean) => Promise<void>;
+  getBounds: () => Promise<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>;
+  createSettingsWindow: () => Promise<void>;
+  setChatIgnoreMouseEvents: (ignore: boolean) => Promise<void>;
+  closeSettingsWindow: () => Promise<void>;
+  getScreenSize: () => Promise<{ width: number; height: number }>;
+  createChatWindow: () => Promise<void>;
+  closeChatWindow: () => Promise<void>;
+
+  getHistory: (sessionId: string) => Promise<DatabaseMessage[]>;
+  addMessage: (message: DatabaseMessage) => Promise<{ success: boolean }>;
+  clearHistory: (sessionId: string) => Promise<{ success: boolean }>;
+
+  quit: () => Promise<void>;
+  onSelectionCaptured: (callback: (text: string) => void) => () => void;
+
+  send: (channel: string, data: unknown) => void;
+  receive: (
+    channel: string,
+    callback: (...args: unknown[]) => void,
+  ) => () => void;
+  removeAllListeners: (channel: string) => void;
+}
+
+declare global {
+  interface Window {
+    electronAPI?: ElectronAPI;
+  }
+}
