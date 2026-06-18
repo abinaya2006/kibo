@@ -11,6 +11,8 @@ import { petControllerSingleton } from "../../controllers/PetController";
 import { useSelectionHandler } from "../../hooks/useSelectionHandler";
 import { SelectionPopup } from "../SelectionPopup/SelectionPopup";
 
+// console.log("PET_SIZE:", PET_SIZE);
+
 export const PetRenderer: React.FC = () => {
   const store = usePetStore();
   const { pet, isLoaded } = store;

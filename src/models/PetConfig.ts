@@ -1,54 +1,54 @@
 // ─── Species Definitions ──────────────────────────────────────────────────────
 
 export interface SpeciesConfig {
-  species:              string;
-  displayName:          string;
-  baseSpeed:            number;
-  curiosityRadius:      number;
-  roamInterval:         [number, number]; // [min, max] ms between roam decisions
-  idleChance:           number;           // 0–1 probability of staying idle
+  species: string;
+  displayName: string;
+  baseSpeed: number;
+  curiosityRadius: number;
+  roamInterval: [number, number]; // [min, max] ms between roam decisions
+  idleChance: number; // 0–1 probability of staying idle
   sleepEnergyThreshold: number;
-  primaryColor:         string;
-  accentColor:          string;
+  primaryColor: string;
+  accentColor: string;
 }
 
 export const SPECIES_CONFIGS: Record<string, SpeciesConfig> = {
   cat: {
-    species:              'cat',
-    displayName:          'Cat',
-    baseSpeed:            60,
-    curiosityRadius:      160,
-    roamInterval:         [3000, 8000],
-    idleChance:           0.4,
+    species: "cat",
+    displayName: "Cat",
+    baseSpeed: 60,
+    curiosityRadius: 160,
+    roamInterval: [3000, 8000],
+    idleChance: 0.4,
     sleepEnergyThreshold: 20,
-    primaryColor:         '#FFBB8C',
-    accentColor:          '#FF8DA1',
+    primaryColor: "#FFBB8C",
+    accentColor: "#FF8DA1",
   },
   dog: {
-    species:              'dog',
-    displayName:          'Dog',
-    baseSpeed:            90,
-    curiosityRadius:      220,
-    roamInterval:         [2000, 5000],
-    idleChance:           0.15,
+    species: "dog",
+    displayName: "Dog",
+    baseSpeed: 90,
+    curiosityRadius: 220,
+    roamInterval: [2000, 5000],
+    idleChance: 0.15,
     sleepEnergyThreshold: 15,
-    primaryColor:         '#C8A882',
-    accentColor:          '#8B6F4E',
+    primaryColor: "#C8A882",
+    accentColor: "#8B6F4E",
   },
   bunny: {
-    species:              'bunny',
-    displayName:          'Bunny',
-    baseSpeed:            70,
-    curiosityRadius:      110,
-    roamInterval:         [4000, 10000],
-    idleChance:           0.5,
+    species: "bunny",
+    displayName: "Bunny",
+    baseSpeed: 70,
+    curiosityRadius: 110,
+    roamInterval: [4000, 10000],
+    idleChance: 0.5,
     sleepEnergyThreshold: 25,
-    primaryColor:         '#F0F0F0',
-    accentColor:          '#FFB3BA',
+    primaryColor: "#F0F0F0",
+    accentColor: "#FFB3BA",
   },
 };
 
-export const DEFAULT_SPECIES = 'cat';
+export const DEFAULT_SPECIES = "cat";
 
 // ─── Behavioral Constants ─────────────────────────────────────────────────────
 
@@ -80,7 +80,7 @@ export const EMOTION_TICK_INTERVAL = 10_000;
 export const SAVE_INTERVAL_MS = 30_000;
 
 /** px — pet sprite render size */
-export const PET_SIZE = 100;
+export const PET_SIZE = 96;
 
 /** px — minimum screen margin for roaming */
 export const SCREEN_MARGIN = 60;
