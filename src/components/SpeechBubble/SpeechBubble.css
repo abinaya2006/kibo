@@ -10,20 +10,19 @@
     pointer-events: auto;
     filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.15));
 }
-
 .speech-bubble-content {
     background: rgba(255, 255, 255, 0.94);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.6);
-    padding: 10px 24px 10px 12px;
-    border-radius: 16px;
+    padding: 8px 22px 8px 10px;
+    border-radius: 14px;
     color: #2c3e50;
     font-family:
         "Outfit",
         "Inter",
         -apple-system,
         sans-serif;
-    font-size: 0.82rem;
+    font-size: 0.76rem;
     font-weight: 550;
     line-height: 1.4;
     white-space: normal;
@@ -32,8 +31,8 @@
     position: relative;
     width: 100%;
     box-sizing: border-box;
-    min-height: 40px;
-    max-height: 168px; /* ~7 lines at this font-size/line-height */
+    min-height: 36px;
+    max-height: 150px;
     overflow: hidden;
 }
 

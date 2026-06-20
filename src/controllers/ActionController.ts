@@ -51,11 +51,11 @@ function endPlaySession() {
   playSessionTimer = null;
 
   const store = usePetStore.getState();
+  store.setRoamingEnabled(false); // ← stop autonomous movement
   store.setPetStateDirect("idle");
   store.setTargetPosition(null);
   store.setVelocity({ x: 0, y: 0 });
 }
-
 // ─── Action Controller ─────────────────────────────────────────────────────────
 
 export const ActionController = {
@@ -91,10 +91,12 @@ export const ActionController = {
   },
 
   play() {
-    endPlaySession(); // cancel any existing session first
+    endPlaySession();
 
     const store = usePetStore.getState();
     const { pet } = store;
+
+    store.setRoamingEnabled(true); // ← allow movement during play
 
     store.setEmotions({
       happiness: Math.min(100, pet.emotions.happiness + 20),
@@ -105,17 +107,23 @@ export const ActionController = {
     store.setRelationship(pet.relationship + 5);
     store.touchInteraction();
 
-    // Kick off rotating activities
     runPlayActivity(0);
 
-    // End play session after PLAY_DURATION_MS
     playSessionTimer = setTimeout(endPlaySession, PLAY_DURATION_MS);
   },
 
   wake() {
     endPlaySession();
     const store = usePetStore.getState();
+    const { pet } = store;
+
     store.setPetStateDirect("idle");
+
+    // Only restore energy if pet was actually sleeping (don't free-give energy otherwise)
+    if (pet.state === "sleeping") {
+      store.setEmotions({ energy: Math.min(100, pet.emotions.energy + 40) });
+    }
+
     store.touchInteraction();
   },
 

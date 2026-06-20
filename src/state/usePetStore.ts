@@ -24,6 +24,10 @@ interface PetStore {
   voiceConfig: VoiceConfig;
   sessionId: string;
 
+  // Movement gating
+  roamingEnabled: boolean;
+  setRoamingEnabled: (enabled: boolean) => void;
+
   // Actions
   setPet: (pet: PetData) => void;
   setPetState: (state: PetState) => void;
@@ -115,6 +119,9 @@ export const usePetStore = create<PetStore>()(
     apiConfig: loadStoredAPIConfig(),
     voiceConfig: loadStoredVoiceConfig(),
     sessionId: crypto.randomUUID(),
+
+    roamingEnabled: false,
+    setRoamingEnabled: (enabled) => set({ roamingEnabled: enabled }),
 
     setPet: (pet) => set({ pet }),
 

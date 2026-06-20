@@ -6,10 +6,9 @@ interface SpeechBubbleProps {
   text: string | null;
   onClose: () => void;
 }
-
-const BUBBLE_WIDTH = 240; // fixed width, px
+const BUBBLE_WIDTH = 180; // was 240
 const MAX_LINES = 7;
-const CHARS_PER_LINE = 32; // approx chars that fit one line at this width/font
+const CHARS_PER_LINE = 24; // was 32 — narrower width fits fewer chars per line
 const CHARS_PER_PAGE = MAX_LINES * CHARS_PER_LINE;
 
 // Roughly 300ms per word, with sane floor/ceiling — used per page, not whole text
