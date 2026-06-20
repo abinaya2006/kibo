@@ -37,21 +37,21 @@ export const PetSprite: React.FC<PetSpriteProps> = ({
 
   // ── Dog / Bunny: SVG fallback ──────────────────────────────────────────────
   //
-  if (species === "dog") {
-    return (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <DogSpriteSheet state={state} mood={mood} facing={facing} scale={4} />
-      </div>
-    );
-  }
+  // if (species === "dog") {
+  //   return (
+  //     <div
+  //       style={{
+  //         width: "100%",
+  //         height: "100%",
+  //         display: "flex",
+  //         alignItems: "center",
+  //         justifyContent: "center",
+  //       }}
+  //     >
+  //       <DogSpriteSheet state={state} mood={mood} facing={facing} scale={4} />
+  //     </div>
+  //   );
+  // }
 
   const config = SPECIES_CONFIGS[species] || SPECIES_CONFIGS["cat"];
   const pColor = config.primaryColor;

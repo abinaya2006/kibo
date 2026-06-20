@@ -26,9 +26,13 @@ export class SpriteAnimator {
   }
 
   play(name: string) {
-    if (this.currentAnim === name) return;
     const anim = this.animations.get(name);
-    if (!anim) return;
+    if (!anim) {
+      console.warn(`[SpriteAnimator] Animation "${name}" not registered`);
+      return;
+    }
+    if (this.currentAnim === name) return;
+
     this.currentAnim = name;
     this.currentFrame = 0;
     this.lastFrameTime = performance.now();
@@ -37,7 +41,10 @@ export class SpriteAnimator {
 
   update(now: number) {
     const anim = this.animations.get(this.currentAnim);
-    if (!anim) return;
+    if (!anim || anim.frames.length === 0) return;
+
+    // Nothing to animate on single-frame animations
+    if (anim.frames.length === 1) return;
 
     const interval = 1000 / anim.fps;
     if (now - this.lastFrameTime < interval) return;
@@ -55,8 +62,11 @@ export class SpriteAnimator {
 
   getCurrentFrame(): FrameDef | null {
     const anim = this.animations.get(this.currentAnim);
-    if (!anim) return null;
-    return anim.frames[this.currentFrame] ?? null;
+    if (!anim || anim.frames.length === 0) return null;
+
+    // Defensive clamp — never index out of bounds even mid-transition
+    const safeIndex = Math.min(this.currentFrame, anim.frames.length - 1);
+    return anim.frames[safeIndex] ?? null;
   }
 
   onFrame(cb: () => void): () => void {

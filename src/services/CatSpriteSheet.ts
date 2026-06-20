@@ -87,16 +87,10 @@ export const CAT_ANIMATIONS: Record<AnimationName, AnimationDef> = {
   },
 
   // rows 11–12 — sleeping
+  // row 12 (visual) = index 11 — sleeping, 8 frames
   sleeping: {
-    frames: extractFrames(11, 2, 8),
+    frames: extractFrames(11, 1, 8),
     fps: 4,
-    loop: true,
-  },
-
-  // row 13 — sleep position, eyes open
-  sleepingIdle: {
-    frames: extractFrames(13, 1, 8),
-    fps: 2,
     loop: true,
   },
 
@@ -171,7 +165,7 @@ const STATE_TO_ANIMATION: Record<string, AnimationName> = {
   curious: "idle",
   beingDragged: "running",
   playing: "running",
-  yawning: "sleepingIdle",
+  yawning: "sleeping", // ← changed from 'sleepingIdle'
   stretches: "sitting",
 };
 
@@ -184,7 +178,7 @@ export function resolveAnimation(
   },
 ): AnimationName {
   if (state === "sleeping") {
-    return (context?.energy ?? 100) < 20 ? "sleepingIdle" : "sleeping";
+    return "sleeping"; // always use sleeping, never sleepingIdle
   }
   if (state === "walking" && context?.isFollowingCursor) {
     return "running";
