@@ -24,11 +24,6 @@ function speakText(text: string, onDone?: () => void) {
   window.speechSynthesis.speak(utterance);
 }
 
-function truncateForBubble(text: string, maxLen = 140): string {
-  if (text.length <= maxLen) return text;
-  return text.slice(0, maxLen).trimEnd() + "...";
-}
-
 export function useSelectionHandler(
   setSpeech: (text: string | null) => void,
   showPopup: (text: string, x: number, y: number) => void,
@@ -58,7 +53,7 @@ export function useSelectionHandler(
 
     setTimeout(() => {
       store.setPetStateDirect("speaking");
-      setSpeech(truncateForBubble(text));
+      setSpeech(text); // ← full text, no truncation
 
       if (voiceConfig.enabled) {
         VoiceManager.speak(text, voiceConfig, undefined, true).then(() => {
@@ -83,7 +78,7 @@ export function useSelectionHandler(
       const explanation = await AIService.query(prompt, [], apiConfig, pet);
 
       store.setPetStateDirect("speaking");
-      setSpeech(truncateForBubble(explanation));
+      setSpeech(explanation); // ← full explanation, no truncation
 
       if (voiceConfig.enabled) {
         await VoiceManager.speak(
