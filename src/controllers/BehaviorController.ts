@@ -13,10 +13,8 @@ export class BehaviorController {
     const store = usePetStore.getState();
     const { pet, roamingEnabled } = store;
 
-    // Don't react to cursor at all unless in an active play session
     if (!roamingEnabled) return;
 
-    // Dragging or AI interaction states override standard cursor interpretations
     if (
       pet.state === "beingDragged" ||
       pet.state === "listening" ||
@@ -28,16 +26,14 @@ export class BehaviorController {
 
     const currentEnergy = pet.emotions.energy;
 
-    // 1. Inactive / Sleep triggers
-    if (currentEnergy < 10 && pet.state !== "sleeping") {
-      store.setPetStateDirect("sleeping");
-      store.setTargetPosition(null);
-      store.setVelocity({ x: 0, y: 0 });
-      return;
-    }
+    // Don't force sleep during an active play session — roamingEnabled implies play is active
+    // (sleep should only trigger from natural EmotionManager decay, not mid-play)
+    // So remove this block entirely from here, or gate it differently:
+
+    // 1. Inactive / Sleep triggers — REMOVED from cursor behavior
+    // (sleep is now only triggered by EmotionManager natural decay, not cursor proximity)
 
     if (pet.state === "sleeping") {
-      // Wake up if clicked or if cursor is extremely close and energy > 30
       if (cursor.isNearby && cursor.distanceToPet < 40 && currentEnergy > 30) {
         store.setPetStateDirect("idle");
       }
@@ -49,7 +45,6 @@ export class BehaviorController {
       if (pet.state !== "chasingCursor") {
         store.setPetStateDirect("chasingCursor");
       }
-      // Set target directly to cursor position (subtract offset to center pet on cursor)
       const targetPos = {
         x: cursor.position.x - PET_SIZE / 2,
         y: cursor.position.y - PET_SIZE / 2,
@@ -73,7 +68,6 @@ export class BehaviorController {
     // 4. Cursor Nearby Curiosity / Dwell interaction
     if (cursor.isNearby) {
       if (cursor.dwellTime > DWELL_THRESHOLD) {
-        // Dwell: Cursor is still. Pet approaches cursor.
         if (pet.state !== "followingCursor") {
           store.setPetStateDirect("followingCursor");
         }
@@ -82,7 +76,6 @@ export class BehaviorController {
           y: cursor.position.y - PET_SIZE / 2,
         });
       } else {
-        // Just nearby: Pet gets curious
         if (pet.state === "idle" || pet.state === "walking") {
           store.setPetStateDirect("curious");
           store.setTargetPosition(null);

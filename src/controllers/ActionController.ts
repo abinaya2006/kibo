@@ -20,10 +20,12 @@ function runPlayActivity(index: number) {
   const { screenSize, pet } = store;
 
   const activity = playActivities[index % playActivities.length];
-  store.setPetStateDirect(activity);
 
-  // For walking activities during play, give a random nearby target
-  if (activity === "walking") {
+  if (activity === "followingCursor" || activity === "chasingCursor") {
+    // Don't force state — let BehaviorController drive it via cursor events
+    // Just ensure roamingEnabled stays true (already true during play)
+  } else if (activity === "walking") {
+    store.setPetStateDirect(activity);
     const cx = pet.physics.position.x;
     const cy = pet.physics.position.y;
     store.setTargetPosition({
@@ -37,6 +39,7 @@ function runPlayActivity(index: number) {
       ),
     });
   } else {
+    store.setPetStateDirect(activity);
     store.setTargetPosition(null);
     store.setVelocity({ x: 0, y: 0 });
   }

@@ -6,19 +6,18 @@ interface SpeechBubbleProps {
   text: string | null;
   onClose: () => void;
 }
-const BUBBLE_WIDTH = 180; // was 240
+
+const BUBBLE_WIDTH = 180;
 const MAX_LINES = 7;
-const CHARS_PER_LINE = 24; // was 32 — narrower width fits fewer chars per line
+const CHARS_PER_LINE = 24;
 const CHARS_PER_PAGE = MAX_LINES * CHARS_PER_LINE;
 
-// Roughly 300ms per word, with sane floor/ceiling — used per page, not whole text
 function getDismissDuration(pageText: string): number {
   const wordCount = pageText.trim().split(/\s+/).length;
   const estimated = wordCount * 300;
   return Math.min(Math.max(estimated, 4500), 20000);
 }
 
-// Split text into pages without breaking words mid-way
 function paginateText(text: string): string[] {
   const words = text.trim().split(/\s+/);
   const pages: string[] = [];
@@ -48,12 +47,10 @@ export const SpeechBubble: React.FC<SpeechBubbleProps> = ({
   const pages = useMemo(() => (text ? paginateText(text) : []), [text]);
   const totalPages = pages.length;
 
-  // Reset to first page whenever new text arrives
   useEffect(() => {
     setPageIndex(0);
   }, [text]);
 
-  // Auto-advance pages, auto-close on last page
   useEffect(() => {
     if (!text || pages.length === 0) return;
 

@@ -1,5 +1,8 @@
-import { EMOTION_TICK_INTERVAL, BOREDOM_START_AFTER } from '../models/PetConfig';
-import { usePetStore } from '../state/usePetStore';
+import {
+  EMOTION_TICK_INTERVAL,
+  BOREDOM_START_AFTER,
+} from "../models/PetConfig";
+import { usePetStore } from "../state/usePetStore";
 
 export class EmotionManager {
   private intervalId: number | null = null;
@@ -26,16 +29,17 @@ export class EmotionManager {
     let { happiness, energy, excitement, boredom, hunger, social } = emotions;
 
     // 1. Sleeping vs Waking Energy
-    if (state === 'sleeping') {
+    if (state === "sleeping") {
       energy = Math.min(100, energy + 8);
       excitement = Math.max(0, excitement - 5);
       boredom = Math.max(0, boredom - 2);
     } else {
-      // Waking uses energy, hunger grows over time, social decays
-      const stateDrain = state === 'running' || state === 'chasingCursor' ? 4 : 1.5;
+      // Waking uses energy slowly, hunger grows over time, social decays
+      const stateDrain =
+        state === "running" || state === "chasingCursor" ? 1.5 : 0.4;
       energy = Math.max(0, energy - stateDrain);
-      hunger = Math.max(0, hunger - 1);
-      social = Math.max(0, social - 1);
+      hunger = Math.max(0, hunger - 0.5);
+      social = Math.max(0, social - 0.5);
 
       // Boredom grows if not interacted with
       if (idleTime > BOREDOM_START_AFTER) {
@@ -45,19 +49,30 @@ export class EmotionManager {
     }
 
     // 2. State-based Emotional adjustments
-    if (state === 'happy') {
+    if (state === "happy") {
       happiness = Math.min(100, happiness + 2);
-    } else if (state === 'chasingCursor' || state === 'followingCursor') {
+    } else if (state === "chasingCursor" || state === "followingCursor") {
       excitement = Math.min(100, excitement + 4);
       boredom = Math.max(0, boredom - 6);
     }
 
     // 3. Natural Excitement Decay
-    if (state !== 'chasingCursor' && state !== 'followingCursor' && state !== 'playing') {
+    if (
+      state !== "chasingCursor" &&
+      state !== "followingCursor" &&
+      state !== "playing"
+    ) {
       excitement = Math.max(0, excitement - 2.5);
     }
 
     // Apply updates
-    store.setEmotions({ happiness, energy, excitement, boredom, hunger, social });
+    store.setEmotions({
+      happiness,
+      energy,
+      excitement,
+      boredom,
+      hunger,
+      social,
+    });
   };
 }

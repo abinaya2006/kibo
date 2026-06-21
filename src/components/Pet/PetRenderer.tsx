@@ -148,7 +148,7 @@ export const PetRenderer: React.FC = () => {
           pointerEvents: "auto",
         }}
       >
-        <EmotionIndicator mood={pet.mood} />
+        <EmotionIndicator mood={pet.mood} hidden={!!activeSpeech} />
         <SpeechBubble
           text={activeSpeech}
           onClose={() => setActiveSpeech(null)}

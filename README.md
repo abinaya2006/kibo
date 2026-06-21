@@ -1,77 +1,101 @@
-<<<<<<< HEAD
-# React + TypeScript + Vite
+<div align="center">
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+<img src="https://readme-typing-svg.demolab.com?font=Outfit&size=38&duration=3000&pause=1000&color=A78BFA&center=true&vCenter=true&width=600&lines=Pet+AI;a+desktop+companion" alt="Desktop Pet" />
 
-Currently, two official plugins are available:
+<br/>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+[![Made with Electron](https://img.shields.io/badge/Made%20with-Electron-47848F?style=for-the-badge&logo=electron&logoColor=white)](https://electronjs.org)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
 
-## React Compiler
+<br/>
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+> A desktop pet that lives on your desktop, reacts to you, and explains anything you highlight — powered by free AI.
 
-## Expanding the ESLint configuration
+<br/>
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+ ／l、
+（ﾟ､ ｡７
+  l、 ~ヽ
+      じしf_,)ノ
+this little guy lives on your screen
+     and actually helps you learn things
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+</div>
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## What is this?
+
+Desktop Pet is a desktop companion built with Electron and React. It sits on your screen, wanders around, reacts to your cursor, and can explain anything you highlight using AI.
+
+It combines a virtual pet simulation with a voice assistant and learning tool — without getting in your way while you work.
+
+Think Desktop Goose meets ChatGPT meets Tamagotchi.
+
+---
+
+## Core Features
+
+### Desktop Pet
+- Animated SVG pet — cat, dog, or bunny
+- 16 states: idle, walking, sleeping, thinking, speaking, listening, chasing cursor, being dragged, and more
+- Cursor tracking — pet follows, gets curious, chases fast movement
+- Drag anywhere on screen
+- Mood system tied to hunger, energy, happiness, and boredom
+- Periodic dialogue based on current state and mood
+
+### Text Selection
+Highlight anything on screen, press `Alt+Shift+A`, and a popup appears near the pet:
+
 ```
-=======
-# desktop-pet
->>>>>>> 5711e67109020bc577057a2d6b64f83f7d1555c6
+Highlight text anywhere
+        ↓
+  Alt + Shift + A
+        ↓
+  [ Read ]   [ Explain ]
+
+Read    → pet reads it aloud via TTS
+Explain → pet explains it via AI, speaks the response
+```
+
+Works in browsers, PDFs, IDEs, notes, anywhere.
+
+### AI Chat
+- Floating chat window with full conversation history
+- Stored in SQLite, persists across restarts
+- Pet animates while thinking and speaking
+- Voice input via microphone (Whisper STT)
+- Personality-aware responses
+
+### AI Providers
+Both are free, no credit card required.
+
+| Provider | Speed | Model | Get Key |
+|----------|-------|-------|---------|
+| Google Gemini | Fast | gemini-2.0-flash | [aistudio.google.com](https://aistudio.google.com) |
+| Groq | Fastest | llama-3.3-70b | [console.groq.com](https://console.groq.com) |
+
+### Voice
+- Web Speech API out of the box — zero config
+- OpenAI TTS for higher quality
+- Voice queue with interrupt support
+
+---
+
+## Getting Started
+
+### Requirements
+- Node.js 18+
+- npm
+
+### Install and run
+
+```bash
+git clone https://github.com/abinaya2006/desktop-pet
+cd desktop-pet
+npm install
+npm run electron-dev
+```

@@ -22,6 +22,8 @@ export const EmotionIndicator: React.FC<EmotionIndicatorProps> = ({
   mood,
   hidden = false,
 }) => {
+  if (hidden) return null;
+
   return (
     <div
       style={{
@@ -34,21 +36,19 @@ export const EmotionIndicator: React.FC<EmotionIndicatorProps> = ({
       }}
     >
       <AnimatePresence mode="wait">
-        {!hidden && (
-          <motion.div
-            key={mood}
-            initial={{ opacity: 0, y: 8, scale: 0.5 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.5 }}
-            transition={{ type: "spring", damping: 12, stiffness: 220 }}
-            style={{
-              fontSize: "1.2rem",
-              filter: "drop-shadow(0 2px 5px rgba(0,0,0,0.15))",
-            }}
-          >
-            {EMOJI_MAP[mood]}
-          </motion.div>
-        )}
+        <motion.div
+          key={mood}
+          initial={{ opacity: 0, y: 8, scale: 0.5 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -8, scale: 0.5 }}
+          transition={{ type: "spring", damping: 12, stiffness: 220 }}
+          style={{
+            fontSize: "1.2rem",
+            filter: "drop-shadow(0 2px 5px rgba(0,0,0,0.15))",
+          }}
+        >
+          {EMOJI_MAP[mood]}
+        </motion.div>
       </AnimatePresence>
     </div>
   );
