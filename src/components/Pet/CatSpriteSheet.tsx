@@ -63,21 +63,39 @@ export const CatSpriteSheet: React.FC<CatSpriteSheetProps> = ({
   if (!frame) return null;
 
   const displaySize = FRAME_SIZE * scale;
+  const isBeingPatted = state === "beingPatted";
 
   return (
     <div
       style={{
         width: `${displaySize}px`,
         height: `${displaySize}px`,
-        backgroundImage: `url(${catSheet})`,
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: `-${frame.x * scale}px -${frame.y * scale}px`,
-        backgroundSize: `${SHEET_WIDTH * scale}px ${SHEET_HEIGHT * scale}px`,
-        imageRendering: "pixelated" as React.CSSProperties["imageRendering"],
-        transform: `scaleX(${facing === "left" ? -1 : 1})`,
-        transformOrigin: "center center",
+        animation: isBeingPatted ? "petPatBob 0.15s ease-in-out" : undefined,
+        transform: `scaleX(${facing === "left" ? -1 : 1}) ${isBeingPatted ? "scaleY(0.92)" : ""}`,
+        transformOrigin: "center bottom",
+        transition: isBeingPatted ? "none" : "transform 0.1s ease-out",
       }}
-    />
+    >
+      <style>{`
+        @keyframes petPatBob {
+          0%   { transform: scaleX(${facing === "left" ? -1 : 1}) scaleY(1)    translateY(0px); }
+          30%  { transform: scaleX(${facing === "left" ? -1 : 1}) scaleY(0.88) translateY(3px); }
+          60%  { transform: scaleX(${facing === "left" ? -1 : 1}) scaleY(1.05) translateY(-2px); }
+          100% { transform: scaleX(${facing === "left" ? -1 : 1}) scaleY(1)    translateY(0px); }
+        }
+      `}</style>
+      <div
+        style={{
+          width: `${displaySize}px`,
+          height: `${displaySize}px`,
+          backgroundImage: `url(${catSheet})`,
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: `-${frame.x * scale}px -${frame.y * scale}px`,
+          backgroundSize: `${SHEET_WIDTH * scale}px ${SHEET_HEIGHT * scale}px`,
+          imageRendering: "pixelated" as React.CSSProperties["imageRendering"],
+        }}
+      />
+    </div>
   );
 };
 

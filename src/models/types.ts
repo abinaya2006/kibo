@@ -16,7 +16,8 @@ export type PetState =
   | "yawning"
   | "stretches"
   | "listening"
-  | "speaking";
+  | "speaking"
+  | "beingPatted";   // ← head-pat animation during play
 
 // ─── Mood & Personality ───────────────────────────────────────────────────────
 
@@ -138,8 +139,8 @@ export interface AIProviderConfig {
 export interface VoiceConfig {
   ttsProvider: "edge" | "openai";
   openaiApiKey?: string;
-  voiceId: string; // Voice identity (e.g. En-US-AriaNeural)
-  speed: number; // Speech rate modifier (0.5 to 2)
+  voiceId: string;
+  speed: number;
   enabled: boolean;
 }
 

@@ -15,6 +15,7 @@ export const VALID_TRANSITIONS: Record<PetState, ReadonlyArray<PetState>> = {
     "stretches",
     "listening",
     "thinking",
+    "beingPatted",
   ],
   walking: [
     "idle",
@@ -23,8 +24,9 @@ export const VALID_TRANSITIONS: Record<PetState, ReadonlyArray<PetState>> = {
     "chasingCursor",
     "beingDragged",
     "curious",
+    "beingPatted",
   ],
-  running: ["walking", "idle", "chasingCursor", "beingDragged"],
+  running: ["walking", "idle", "chasingCursor", "beingDragged", "beingPatted"],
   sleeping: ["idle"],
   playing: [
     "idle",
@@ -32,6 +34,7 @@ export const VALID_TRANSITIONS: Record<PetState, ReadonlyArray<PetState>> = {
     "followingCursor",
     "chasingCursor",
     "beingDragged",
+    "beingPatted",
   ],
   followingCursor: [
     "idle",
@@ -41,6 +44,7 @@ export const VALID_TRANSITIONS: Record<PetState, ReadonlyArray<PetState>> = {
     "beingDragged",
     "chasingCursor",
     "curious",
+    "beingPatted",
   ],
   chasingCursor: [
     "followingCursor",
@@ -49,9 +53,18 @@ export const VALID_TRANSITIONS: Record<PetState, ReadonlyArray<PetState>> = {
     "happy",
     "beingDragged",
     "playing",
+    "beingPatted",
   ],
   beingDragged: ["idle", "happy"],
-  happy: ["idle", "walking", "playing", "followingCursor", "beingDragged"],
+  happy: [
+    "idle",
+    "walking",
+    "playing",
+    "followingCursor",
+    "beingDragged",
+    "beingPatted",
+    "chasingCursor",
+  ],
   curious: [
     "idle",
     "followingCursor",
@@ -59,6 +72,7 @@ export const VALID_TRANSITIONS: Record<PetState, ReadonlyArray<PetState>> = {
     "happy",
     "beingDragged",
     "listening",
+    "beingPatted",
   ],
   eating: ["idle", "happy"],
   thinking: ["idle", "happy", "curious", "speaking"],
@@ -66,6 +80,8 @@ export const VALID_TRANSITIONS: Record<PetState, ReadonlyArray<PetState>> = {
   stretches: ["idle", "walking"],
   listening: ["thinking", "idle"],
   speaking: ["idle", "listening", "thinking"],
+  // beingPatted can return to happy (during play) or idle (outside play)
+  beingPatted: ["happy", "idle", "chasingCursor", "walking"],
 };
 
 // ─── Speed Settings ────────────────────────────────────────────────────────────
@@ -73,9 +89,9 @@ export const VALID_TRANSITIONS: Record<PetState, ReadonlyArray<PetState>> = {
 export const SPEED_PRESETS: Record<PetState, number> = {
   idle: 0,
   walking: 60,
-  running: 160,
+  running: 200,          // faster dart during play
   followingCursor: 80,
-  chasingCursor: 200,
+  chasingCursor: 240,    // snappier chase
   sleeping: 0,
   playing: 100,
   happy: 0,
@@ -87,6 +103,7 @@ export const SPEED_PRESETS: Record<PetState, number> = {
   stretches: 0,
   listening: 0,
   speaking: 0,
+  beingPatted: 0,        // frozen while being patted
 };
 
 export function canTransition(from: PetState, to: PetState): boolean {

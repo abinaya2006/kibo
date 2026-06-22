@@ -4,15 +4,22 @@ import { usePetStore } from "../state/usePetStore";
 let playSessionTimer: ReturnType<typeof setTimeout> | null = null;
 let playActivityTimer: ReturnType<typeof setTimeout> | null = null;
 
-const PLAY_DURATION_MS = 15000; // 15 seconds of play
+const PLAY_DURATION_MS = 20000; // 20 seconds of play
 
+// Activities weighted toward chasing and movement
+// "chasingCursor" appears most — BehaviorController will drive it reactively
+// "running" makes the cat dart around the screen energetically
 const playActivities = [
-  "followingCursor",
+  "chasingCursor",
   "chasingCursor",
   "happy",
+  "running",
+  "chasingCursor",
   "walking",
   "chasingCursor",
   "happy",
+  "running",
+  "chasingCursor",
 ] as const;
 
 function runPlayActivity(index: number) {
@@ -21,30 +28,41 @@ function runPlayActivity(index: number) {
 
   const activity = playActivities[index % playActivities.length];
 
-  if (activity === "followingCursor" || activity === "chasingCursor") {
-    // Don't force state — let BehaviorController drive it via cursor events
-    // Just ensure roamingEnabled stays true (already true during play)
-  } else if (activity === "walking") {
-    store.setPetStateDirect(activity);
+  if (activity === "chasingCursor") {
+    // Let BehaviorController handle actual cursor chasing
+    // We set the state as a hint; movement is driven by cursor events
+    // But also give it a random dart target so it moves even without cursor
     const cx = pet.physics.position.x;
     const cy = pet.physics.position.y;
+    store.setPetStateDirect("chasingCursor");
     store.setTargetPosition({
-      x: Math.max(
-        40,
-        Math.min(screenSize.width - 80, cx + (Math.random() - 0.5) * 300),
-      ),
-      y: Math.max(
-        40,
-        Math.min(screenSize.height - 80, cy + (Math.random() - 0.5) * 200),
-      ),
+      x: Math.max(40, Math.min(screenSize.width - 80, cx + (Math.random() - 0.5) * 400)),
+      y: Math.max(40, Math.min(screenSize.height - 80, cy + (Math.random() - 0.5) * 300)),
+    });
+  } else if (activity === "running") {
+    // Dart to a random spot quickly
+    store.setPetStateDirect("running");
+    store.setTargetPosition({
+      x: Math.max(40, Math.min(screenSize.width - 80, Math.random() * (screenSize.width - 120) + 40)),
+      y: Math.max(40, Math.min(screenSize.height - 80, Math.random() * (screenSize.height - 120) + 40)),
+    });
+  } else if (activity === "walking") {
+    const cx = pet.physics.position.x;
+    const cy = pet.physics.position.y;
+    store.setPetStateDirect("walking");
+    store.setTargetPosition({
+      x: Math.max(40, Math.min(screenSize.width - 80, cx + (Math.random() - 0.5) * 250)),
+      y: Math.max(40, Math.min(screenSize.height - 80, cy + (Math.random() - 0.5) * 200)),
     });
   } else {
+    // happy — spin / bounce in place
     store.setPetStateDirect(activity);
     store.setTargetPosition(null);
     store.setVelocity({ x: 0, y: 0 });
   }
 
-  playActivityTimer = setTimeout(() => runPlayActivity(index + 1), 2500);
+  // Shorter interval for snappier play feel
+  playActivityTimer = setTimeout(() => runPlayActivity(index + 1), 2000);
 }
 
 function endPlaySession() {
@@ -54,11 +72,12 @@ function endPlaySession() {
   playSessionTimer = null;
 
   const store = usePetStore.getState();
-  store.setRoamingEnabled(false); // ← stop autonomous movement
+  store.setRoamingEnabled(false);
   store.setPetStateDirect("idle");
   store.setTargetPosition(null);
   store.setVelocity({ x: 0, y: 0 });
 }
+
 // ─── Action Controller ─────────────────────────────────────────────────────────
 
 export const ActionController = {
@@ -73,10 +92,8 @@ export const ActionController = {
     store.setRelationship(pet.relationship + 2);
     store.touchInteraction();
 
-    // Use 'happy' — it exists and shows a reaction
     store.setPetStateDirect("happy");
 
-    // Return to idle after 2s
     setTimeout(() => {
       const s = usePetStore.getState();
       if (s.pet.state === "happy") {
@@ -99,7 +116,7 @@ export const ActionController = {
     const store = usePetStore.getState();
     const { pet } = store;
 
-    store.setRoamingEnabled(true); // ← allow movement during play
+    store.setRoamingEnabled(true);
 
     store.setEmotions({
       happiness: Math.min(100, pet.emotions.happiness + 20),
@@ -110,7 +127,9 @@ export const ActionController = {
     store.setRelationship(pet.relationship + 5);
     store.touchInteraction();
 
-    runPlayActivity(0);
+    // Kick off with a burst of excitement
+    store.setPetStateDirect("happy");
+    setTimeout(() => runPlayActivity(0), 600);
 
     playSessionTimer = setTimeout(endPlaySession, PLAY_DURATION_MS);
   },
@@ -122,7 +141,6 @@ export const ActionController = {
 
     store.setPetStateDirect("idle");
 
-    // Only restore energy if pet was actually sleeping (don't free-give energy otherwise)
     if (pet.state === "sleeping") {
       store.setEmotions({ energy: Math.min(100, pet.emotions.energy + 40) });
     }
@@ -155,10 +173,8 @@ export const ActionController = {
     store.touchInteraction();
     store.setPetStateDirect("happy");
 
-    // Float the food emoji above the pet
     ActionController._spawnFoodParticle(food.emoji);
 
-    // Return to idle after reaction
     setTimeout(() => {
       const s = usePetStore.getState();
       if (s.pet.state === "happy") s.setPetStateDirect("idle");
@@ -176,7 +192,6 @@ export const ActionController = {
       transition: transform 1.2s ease-out, opacity 1.2s ease-out;
     `;
 
-    // Position near the pet
     const store = usePetStore.getState();
     const { position } = store.pet.physics;
     el.style.left = `${position.x + 20}px`;
@@ -184,7 +199,6 @@ export const ActionController = {
 
     document.body.appendChild(el);
 
-    // Animate upward and fade
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         el.style.transform = "translateY(-60px) scale(1.3)";

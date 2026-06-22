@@ -6,8 +6,18 @@ import {
   PET_SIZE,
 } from "../models/PetConfig";
 
+// How long the head-pat animation plays (ms)
+const PAT_DURATION_MS = 1200;
+// Minimum time between pats
+const PAT_COOLDOWN_MS = 800;
+// During play, chase cursor even at low speeds if within this distance
+const PLAY_CHASE_DISTANCE = 300;
+// Minimum cursor speed to trigger chase during play (lower than normal)
+const PLAY_CHASE_SPEED = 1;
+
 export class BehaviorController {
   private lastPatTime = 0;
+  private patTimeout: ReturnType<typeof setTimeout> | null = null;
 
   interpretCursorBehavior(cursor: CursorData) {
     const store = usePetStore.getState();
@@ -19,19 +29,13 @@ export class BehaviorController {
       pet.state === "beingDragged" ||
       pet.state === "listening" ||
       pet.state === "thinking" ||
-      pet.state === "speaking"
+      pet.state === "speaking" ||
+      pet.state === "beingPatted"   // ← don't interrupt a pat
     ) {
       return;
     }
 
     const currentEnergy = pet.emotions.energy;
-
-    // Don't force sleep during an active play session — roamingEnabled implies play is active
-    // (sleep should only trigger from natural EmotionManager decay, not mid-play)
-    // So remove this block entirely from here, or gate it differently:
-
-    // 1. Inactive / Sleep triggers — REMOVED from cursor behavior
-    // (sleep is now only triggered by EmotionManager natural decay, not cursor proximity)
 
     if (pet.state === "sleeping") {
       if (cursor.isNearby && cursor.distanceToPet < 40 && currentEnergy > 30) {
@@ -40,11 +44,18 @@ export class BehaviorController {
       return;
     }
 
-    // 2. High-speed Cursor Chase Behavior
-    if (cursor.isNearby && cursor.speed > FAST_CURSOR_SPEED) {
+    // ── PLAY MODE: aggressive cursor chasing ──────────────────────────────────
+    // During a play session (roamingEnabled), chase cursor whenever it moves
+    // at any speed, as long as it's within PLAY_CHASE_DISTANCE pixels.
+    if (
+      roamingEnabled &&
+      cursor.distanceToPet < PLAY_CHASE_DISTANCE &&
+      cursor.speed > PLAY_CHASE_SPEED
+    ) {
       if (pet.state !== "chasingCursor") {
         store.setPetStateDirect("chasingCursor");
       }
+      // Target slightly behind cursor so the cat "chases" rather than teleports
       const targetPos = {
         x: cursor.position.x - PET_SIZE / 2,
         y: cursor.position.y - PET_SIZE / 2,
@@ -54,7 +65,20 @@ export class BehaviorController {
       return;
     }
 
-    // 3. Circling Excitement Behavior
+    // ── NORMAL: high-speed chase ───────────────────────────────────────────────
+    if (cursor.isNearby && cursor.speed > FAST_CURSOR_SPEED) {
+      if (pet.state !== "chasingCursor") {
+        store.setPetStateDirect("chasingCursor");
+      }
+      store.setTargetPosition({
+        x: cursor.position.x - PET_SIZE / 2,
+        y: cursor.position.y - PET_SIZE / 2,
+      });
+      store.touchInteraction();
+      return;
+    }
+
+    // ── Circling Excitement ───────────────────────────────────────────────────
     if (cursor.isNearby && cursor.isCircling) {
       if (pet.state !== "happy") {
         store.setPetStateDirect("happy");
@@ -65,7 +89,7 @@ export class BehaviorController {
       return;
     }
 
-    // 4. Cursor Nearby Curiosity / Dwell interaction
+    // ── Dwell / Curiosity ─────────────────────────────────────────────────────
     if (cursor.isNearby) {
       if (cursor.dwellTime > DWELL_THRESHOLD) {
         if (pet.state !== "followingCursor") {
@@ -85,7 +109,7 @@ export class BehaviorController {
       return;
     }
 
-    // 5. Cursor Leaves / Return to roaming
+    // ── Cursor Left ───────────────────────────────────────────────────────────
     if (!cursor.isNearby) {
       if (
         pet.state === "followingCursor" ||
@@ -101,7 +125,7 @@ export class BehaviorController {
 
   handlePetClick() {
     const store = usePetStore.getState();
-    const { pet } = store;
+    const { pet, roamingEnabled } = store;
 
     if (pet.state === "sleeping") {
       store.setPetStateDirect("idle");
@@ -109,7 +133,13 @@ export class BehaviorController {
       return;
     }
 
-    // Clicking switches to a happy/play state
+    // During play mode → trigger head-pat animation
+    if (roamingEnabled) {
+      this._triggerPat(store);
+      return;
+    }
+
+    // Normal click → happy
     store.setPetStateDirect("happy");
     store.setTargetPosition(null);
     store.setVelocity({ x: 0, y: 0 });
@@ -118,10 +148,70 @@ export class BehaviorController {
 
   handlePetPat() {
     const now = Date.now();
-    if (now - this.lastPatTime < 800) return; // rate limit pat logs
-    this.lastPatTime = now;
+    if (now - this.lastPatTime < PAT_COOLDOWN_MS) return;
 
     const store = usePetStore.getState();
+    this._triggerPat(store);
+  }
+
+  private _triggerPat(store: ReturnType<typeof usePetStore.getState>) {
+    const now = Date.now();
+    if (now - this.lastPatTime < PAT_COOLDOWN_MS) return;
+    this.lastPatTime = now;
+
+    // Clear any pending pat reset
+    if (this.patTimeout) {
+      clearTimeout(this.patTimeout);
+      this.patTimeout = null;
+    }
+
+    // Stop movement, play pat animation
+    store.setPetStateDirect("beingPatted");
+    store.setTargetPosition(null);
+    store.setVelocity({ x: 0, y: 0 });
     store.touchInteraction();
+
+    // Boost happiness a little each pat
+    const { pet } = store;
+    store.setEmotions({
+      happiness: Math.min(100, pet.emotions.happiness + 5),
+    });
+
+    // Spawn heart particle above the pet
+    this._spawnHeartParticle(pet.physics.position);
+
+    // Return to idle/play after animation
+    this.patTimeout = setTimeout(() => {
+      const s = usePetStore.getState();
+      if (s.pet.state === "beingPatted") {
+        // If still in play session go happy, else idle
+        s.setPetStateDirect(s.roamingEnabled ? "happy" : "idle");
+      }
+      this.patTimeout = null;
+    }, PAT_DURATION_MS);
+  }
+
+  private _spawnHeartParticle(position: { x: number; y: number }) {
+    const hearts = ["💕", "💖", "✨", "⭐"];
+    const emoji = hearts[Math.floor(Math.random() * hearts.length)];
+    const el = document.createElement("div");
+    el.textContent = emoji;
+    el.style.cssText = `
+      position: fixed;
+      font-size: 1.4rem;
+      z-index: 99999;
+      pointer-events: none;
+      left: ${position.x + 10 + (Math.random() - 0.5) * 20}px;
+      top: ${position.y}px;
+      transition: transform 1s ease-out, opacity 1s ease-out;
+    `;
+    document.body.appendChild(el);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.style.transform = `translateY(-50px) scale(1.4)`;
+        el.style.opacity = "0";
+      });
+    });
+    setTimeout(() => el.remove(), 1100);
   }
 }

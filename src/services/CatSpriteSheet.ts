@@ -48,7 +48,8 @@ export type AnimationName =
   | "happy"
   | "thinking"
   | "speaking"
-  | "listening";
+  | "listening"
+  | "beingPatted";   // ← new
 
 export const CAT_ANIMATIONS: Record<AnimationName, AnimationDef> = {
   // rows 0–2 — idle (3 rows x 8 frames)
@@ -86,11 +87,17 @@ export const CAT_ANIMATIONS: Record<AnimationName, AnimationDef> = {
     loop: true,
   },
 
-  // rows 11–12 — sleeping
-  // row 12 (visual) = index 11 — sleeping, 8 frames
+  // row 11 — sleeping
   sleeping: {
     frames: extractFrames(11, 1, 8),
     fps: 4,
+    loop: true,
+  },
+
+  // row 12 — sleeping idle (breathing)
+  sleepingIdle: {
+    frames: extractFrames(12, 1, 8),
+    fps: 3,
     loop: true,
   },
 
@@ -122,7 +129,7 @@ export const CAT_ANIMATIONS: Record<AnimationName, AnimationDef> = {
     loop: false,
   },
 
-  // emotional fallbacks — idle until confirmed
+  // emotional fallbacks
   happy: {
     frames: extractFrames(0, 1, 8),
     fps: 10,
@@ -146,6 +153,22 @@ export const CAT_ANIMATIONS: Record<AnimationName, AnimationDef> = {
     fps: 8,
     loop: true,
   },
+
+  // ── beingPatted ────────────────────────────────────────────────────────────
+  // Uses the sitting row (row 10) played at fast fps — cat squats/squishes
+  // like it's being pushed down gently, then the waking row bounces it back.
+  // We play sitting frames forward then the first 4 waking frames to create
+  // a squish → spring-back feel without needing a dedicated sheet row.
+  beingPatted: {
+    frames: [
+      // Sit down (squish in) — row 10, frames 0-3
+      ...extractFrames(10, 1, 8).slice(0, 4),
+      // Spring back up — waking row 15, frames 0-3 (head lifts)
+      ...extractFrames(15, 1, 8).slice(0, 4),
+    ],
+    fps: 12,   // snappy so the squish feels responsive
+    loop: false,
+  },
 };
 
 // ─── State Resolver ────────────────────────────────────────────────────────────
@@ -165,8 +188,9 @@ const STATE_TO_ANIMATION: Record<string, AnimationName> = {
   curious: "idle",
   beingDragged: "running",
   playing: "running",
-  yawning: "sleeping", // ← changed from 'sleepingIdle'
+  yawning: "sleeping",
   stretches: "sitting",
+  beingPatted: "beingPatted",  // ← maps to our new animation
 };
 
 export function resolveAnimation(
@@ -178,7 +202,7 @@ export function resolveAnimation(
   },
 ): AnimationName {
   if (state === "sleeping") {
-    return "sleeping"; // always use sleeping, never sleepingIdle
+    return "sleeping";
   }
   if (state === "walking" && context?.isFollowingCursor) {
     return "running";
