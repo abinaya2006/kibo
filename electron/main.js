@@ -4,9 +4,10 @@ const path = require("path");
 const {
   createPetWindow,
   createChatWindow,
-  getPetWindow,
   createSettingsWindow,
+  getPetWindow,
   getChatWindow,
+  getSettingsWindow,
 } = require("./windowManager");
 const { registerShortcut, unregisterShortcut } = require("./clipboardWatcher");
 const {
@@ -20,8 +21,6 @@ const {
 let store = null;
 let tray = null;
 
-// ─── Store Initialization ──────────────────────────────────────────────────────
-
 async function initStore() {
   try {
     const Store = require("electron-store");
@@ -31,11 +30,8 @@ async function initStore() {
   }
 }
 
-// ─── Tray Initialization ──────────────────────────────────────────────────────
-
 function initTray() {
   try {
-    // 1x1 transparent PNG data URL to prevent SVG format tray compilation crash logs
     const icon = nativeImage.createFromDataURL(
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
     );
@@ -63,20 +59,7 @@ function initTray() {
   }
 }
 
-function fsExists(p) {
-  try {
-    const fs = require("fs");
-    return fs.existsSync(p);
-  } catch {
-    return false;
-  }
-}
-
-// ─── IPC Registration ─────────────────────────────────────────────────────────
-
 function registerIpcHandlers() {
-  // ── Pet Persistence ────────────────────────────────────────────────────────
-
   ipcMain.handle("pet:save", (_event, petData) => {
     if (!store) return { success: false };
     try {
@@ -92,16 +75,16 @@ function registerIpcHandlers() {
     createSettingsWindow();
   });
 
+  ipcMain.handle("window:close-settings", () => {
+    const win = getSettingsWindow();
+    if (win && !win.isDestroyed()) win.close();
+  });
+
   ipcMain.handle("window:set-chat-ignore-mouse", (_event, { ignore }) => {
     const chatWin = getChatWindow();
     if (chatWin && !chatWin.isDestroyed()) {
       chatWin.setIgnoreMouseEvents(ignore, { forward: true });
     }
-  });
-
-  ipcMain.handle("window:close-settings", () => {
-    const win = getSettingsWindow();
-    if (win && !win.isDestroyed()) win.close();
   });
 
   ipcMain.handle("pet:load", () => {
@@ -124,8 +107,6 @@ function registerIpcHandlers() {
       return { success: false };
     }
   });
-
-  // ── Window Controls ────────────────────────────────────────────────────────
 
   ipcMain.handle("window:set-ignore-mouse", (_event, { ignore }) => {
     const petWin = getPetWindow();
@@ -156,8 +137,6 @@ function registerIpcHandlers() {
     }
   });
 
-  // ── Database Memory ────────────────────────────────────────────────────────
-
   ipcMain.handle("db:get-history", (_event, { sessionId }) => {
     return getMessages(sessionId);
   });
@@ -172,27 +151,18 @@ function registerIpcHandlers() {
     return { success: true };
   });
 
-  // ── App Controls ───────────────────────────────────────────────────────────
-
   ipcMain.handle("app:quit", () => {
     app.quit();
   });
 }
-
-// ─── App Lifecycles ────────────────────────────────────────────────────────────
 
 app.whenReady().then(async () => {
   await initStore();
   initDatabase(app);
   registerIpcHandlers();
 
-  // Create pet companion transparent window
   createPetWindow();
-
-  // Setup system tray
   initTray();
-
-  // Register Alt+Shift+A text copy hook
   registerShortcut();
 
   app.on("activate", () => {

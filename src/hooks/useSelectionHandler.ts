@@ -2,6 +2,7 @@ import { useEffect, useCallback } from "react";
 import { usePetStore } from "../state/usePetStore";
 import { AIService } from "../services/AIService";
 import { VoiceManager } from "../services/VoiceManager";
+import { DatabaseService } from "../services/DatabaseService";
 
 function speakText(text: string, onDone?: () => void) {
   if (!window.speechSynthesis) {
@@ -53,7 +54,7 @@ export function useSelectionHandler(
 
     setTimeout(() => {
       store.setPetStateDirect("speaking");
-      setSpeech(text); // ← full text, no truncation
+      setSpeech(text);
 
       if (voiceConfig.enabled) {
         VoiceManager.speak(text, voiceConfig, undefined, true).then(() => {
@@ -78,7 +79,7 @@ export function useSelectionHandler(
       const explanation = await AIService.query(prompt, [], apiConfig, pet);
 
       store.setPetStateDirect("speaking");
-      setSpeech(explanation); // ← full explanation, no truncation
+      setSpeech(explanation);
 
       if (voiceConfig.enabled) {
         await VoiceManager.speak(
@@ -102,6 +103,30 @@ export function useSelectionHandler(
     }
   }, []);
 
-  // ← this is what was missing
-  return { handleRead, handleExplain };
+  // ── Ask Kibo — opens chat window and sends the question immediately ────────
+  const handleAskKibo = useCallback(async (text: string) => {
+    const { sessionId, setPendingSelectionContext } = store;
+
+    setPendingSelectionContext(text);
+
+    try {
+      const contextMsg = {
+        id: crypto.randomUUID(),
+        sessionId,
+        role: "assistant" as const,
+        content: `I see you highlighted:\n\n"${text}"\n\nWhat would you like to know about it?`,
+        timestamp: Date.now(),
+      };
+      await DatabaseService.addMessage(contextMsg);
+    } catch (err) {
+      console.error(
+        "[useSelectionHandler] Failed to save context message:",
+        err,
+      );
+    }
+
+    window.electronAPI?.createChatWindow();
+  }, []);
+
+  return { handleRead, handleExplain, handleAskKibo };
 }

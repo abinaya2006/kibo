@@ -28,6 +28,10 @@ interface PetStore {
   roamingEnabled: boolean;
   setRoamingEnabled: (enabled: boolean) => void;
 
+  // Selection context for Ask Kibo follow-ups
+  pendingSelectionContext: string | null;
+  setPendingSelectionContext: (text: string | null) => void;
+
   // Actions
   setPet: (pet: PetData) => void;
   setPetState: (state: PetState) => void;
@@ -60,7 +64,6 @@ const loadStoredAPIConfig = (): AIProviderConfig => {
     const saved = localStorage.getItem("pixel-pet-api-config");
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Migrate stale models only
       if (
         parsed.provider === "gemini" &&
         !parsed.model?.startsWith("gemini-2")
@@ -122,6 +125,10 @@ export const usePetStore = create<PetStore>()(
 
     roamingEnabled: false,
     setRoamingEnabled: (enabled) => set({ roamingEnabled: enabled }),
+
+    pendingSelectionContext: null,
+    setPendingSelectionContext: (text) =>
+      set({ pendingSelectionContext: text }),
 
     setPet: (pet) => set({ pet }),
 

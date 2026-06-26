@@ -1,10 +1,10 @@
-const { globalShortcut, clipboard } = require('electron');
-const { getPetWindow, createChatWindow } = require('./windowManager');
-const { exec } = require('child_process');
+const { globalShortcut, clipboard } = require("electron");
+const { getPetWindow, createChatWindow } = require("./windowManager");
+const { exec } = require("child_process");
 
 function registerShortcut(windowManager) {
   // Alt+Shift+A triggers "Ask Luna" text-selection snapshotting
-  globalShortcut.register('Alt+Shift+A', () => {
+  globalShortcut.register("Alt+Shift+A", () => {
     captureHighlightedText();
   });
 }
@@ -18,7 +18,7 @@ function captureHighlightedText() {
   if (!activeWindow) return;
 
   // Clipboard simulation on Windows using PowerShell to send Ctrl+C keystrokes
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     // Execute PowerShell command that sends standard Copy command safely
     const command = `powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.SendKeys]::SendWait('^c')"`;
     exec(command, (err) => {
@@ -42,11 +42,11 @@ function captureHighlightedText() {
 function dispatchSelection(text) {
   const petWin = getPetWindow();
   if (petWin && !petWin.isDestroyed()) {
-    petWin.webContents.send('selection:captured', text);
+    petWin.webContents.send("selection:captured", text);
   }
 
   // Open & activate chat screen automatically
-  createChatWindow();
+  // createChatWindow();
 }
 
 module.exports = {

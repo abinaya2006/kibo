@@ -4,7 +4,6 @@ import { DatabaseService } from "../../services/DatabaseService";
 import { chatControllerSingleton } from "../../controllers/ChatController";
 import { MessageList } from "./MessageList";
 import { VoiceInput } from "./VoiceInput";
-import { EventBus } from "../../services/EventBus";
 import { VoiceManager } from "../../services/VoiceManager";
 import type { DatabaseMessage } from "../../models/types";
 
@@ -17,32 +16,11 @@ export const ChatWindow: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  // Voice Recording / Transcription States
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
 
-  // Load message logs on session initialization
   useEffect(() => {
     loadHistory();
-  }, [sessionId]);
-
-  // Capture selection capture notifications from EventBus or direct IPC selection channel
-  useEffect(() => {
-    const unsub = EventBus.on("selection:captured", (text: string) => {
-      handleCapturedText(text);
-    });
-
-    if (window.electronAPI) {
-      const unsubIPC = window.electronAPI.onSelectionCaptured((text) => {
-        handleCapturedText(text);
-      });
-      return () => {
-        unsub();
-        unsubIPC();
-      };
-    }
-
-    return unsub;
   }, [sessionId]);
 
   useEffect(() => {
@@ -52,11 +30,6 @@ export const ChatWindow: React.FC = () => {
   const loadHistory = async () => {
     const history = await DatabaseService.getHistory(sessionId);
     setMessages(history);
-  };
-
-  const handleCapturedText = (text: string) => {
-    // Fill text field but do not send immediately, let user choose "Read Aloud" or "Ask AI"
-    setInputText(`Selected text:\n"${text}"`);
   };
 
   const handleReadAloud = async () => {
@@ -90,7 +63,6 @@ export const ChatWindow: React.FC = () => {
 
   const handleToggleRecording = async () => {
     if (recording) {
-      // Stop
       setRecording(false);
       setTranscribing(true);
       try {
@@ -105,7 +77,6 @@ export const ChatWindow: React.FC = () => {
         alert(err.message || "Failed processing recording.");
       }
     } else {
-      // Start
       try {
         await chatControllerSingleton.startVoiceRecording();
         setRecording(true);
@@ -141,7 +112,6 @@ export const ChatWindow: React.FC = () => {
       onMouseEnter={() => window.electronAPI?.setChatIgnoreMouseEvents(false)}
       onMouseLeave={() => window.electronAPI?.setChatIgnoreMouseEvents(true)}
     >
-      {/* Header Bar */}
       <div
         style={{
           padding: "14px 18px",
@@ -213,7 +183,6 @@ export const ChatWindow: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Container */}
       <div
         style={{
           flex: 1,
@@ -222,10 +191,8 @@ export const ChatWindow: React.FC = () => {
           overflow: "hidden",
         }}
       >
-        {/* Messages */}
         <MessageList messages={messages} />
 
-        {/* Settings slide overlay */}
         {showSettings && (
           <div
             style={{
@@ -270,7 +237,6 @@ export const ChatWindow: React.FC = () => {
               </button>
             </div>
 
-            {/* AI Provider Config */}
             <div
               style={{ display: "flex", flexDirection: "column", gap: "8px" }}
             >
@@ -288,10 +254,8 @@ export const ChatWindow: React.FC = () => {
                   borderRadius: "6px",
                 }}
               >
-                <option value="openai">OpenAI (GPT-4o-mini)</option>
-                <option value="gemini-2.0-flash">
-                  Google Gemini 2.0 Flash
-                </option>
+                <option value="gemini">Google Gemini</option>
+                <option value="groq">Groq</option>
               </select>
 
               <label
@@ -321,7 +285,6 @@ export const ChatWindow: React.FC = () => {
               </label>
             </div>
 
-            {/* Voice Preferences */}
             <div
               style={{
                 display: "flex",
@@ -367,7 +330,6 @@ export const ChatWindow: React.FC = () => {
               </select>
             </div>
 
-            {/* System Clear Memory Button */}
             <div
               style={{
                 marginTop: "auto",
@@ -395,7 +357,6 @@ export const ChatWindow: React.FC = () => {
         )}
       </div>
 
-      {/* Input controls footer */}
       <form
         onSubmit={handleSubmit}
         style={{
@@ -480,4 +441,5 @@ export const ChatWindow: React.FC = () => {
     </div>
   );
 };
+
 export default ChatWindow;

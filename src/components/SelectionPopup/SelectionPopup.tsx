@@ -5,8 +5,8 @@ interface SelectionPopupProps {
   text: string;
   x: number;
   y: number;
-  onRead: () => void;
   onExplain: () => void;
+  onAskKibo: () => void;
   onClose: () => void;
 }
 
@@ -14,8 +14,8 @@ export const SelectionPopup: React.FC<SelectionPopupProps> = ({
   text,
   x,
   y,
-  onRead,
   onExplain,
+  onAskKibo,
   onClose,
 }) => {
   const preview = text.length > 60 ? text.slice(0, 60).trimEnd() + "..." : text;
@@ -42,14 +42,34 @@ export const SelectionPopup: React.FC<SelectionPopupProps> = ({
           boxShadow: "0 12px 40px rgba(0,0,0,0.4)",
           fontFamily: "'Outfit','Inter',sans-serif",
           pointerEvents: "auto",
+          position: "relative",
         }}
       >
-        {/* Preview of selected text */}
+        <button
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: "absolute",
+            top: "6px",
+            right: "6px",
+            background: "none",
+            border: "none",
+            color: "#6b7280",
+            fontSize: "0.9rem",
+            cursor: "pointer",
+            lineHeight: 1,
+            padding: "2px",
+          }}
+        >
+          ✕
+        </button>
+
         <div
           style={{
             fontSize: "0.72rem",
             color: "#6b7280",
             marginBottom: "8px",
+            marginRight: "16px",
             lineHeight: 1.4,
             borderBottom: "1px solid rgba(255,255,255,0.06)",
             paddingBottom: "8px",
@@ -58,40 +78,24 @@ export const SelectionPopup: React.FC<SelectionPopupProps> = ({
           "{preview}"
         </div>
 
-        {/* Action buttons */}
         <div style={{ display: "flex", gap: "6px" }}>
-          <button
-            onClick={() => {
-              onRead();
-              onClose();
-            }}
-            style={actionBtn("#1e3a5f", "#60a5fa", "🔊")}
-          >
-            🔊 Read
-          </button>
           <button
             onClick={() => {
               onExplain();
               onClose();
             }}
-            style={actionBtn("#2d1f4e", "#a78bfa", "💡")}
+            style={actionBtn("#2d1f4e", "#a78bfa")}
           >
             💡 Explain
           </button>
           <button
-            onClick={onClose}
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "8px",
-              color: "#6b7280",
-              padding: "6px 8px",
-              cursor: "pointer",
-              fontSize: "0.75rem",
-              fontFamily: "inherit",
+            onClick={() => {
+              onAskKibo();
+              onClose();
             }}
+            style={actionBtn("#1f3d2e", "#4ade80")}
           >
-            ✕
+            🐾 Ask Kibo
           </button>
         </div>
       </motion.div>
@@ -99,18 +103,14 @@ export const SelectionPopup: React.FC<SelectionPopupProps> = ({
   );
 };
 
-function actionBtn(
-  bg: string,
-  color: string,
-  _icon: string,
-): React.CSSProperties {
+function actionBtn(bg: string, color: string): React.CSSProperties {
   return {
     flex: 1,
     background: bg,
     border: `1px solid ${color}33`,
     borderRadius: "8px",
     color,
-    padding: "6px 10px",
+    padding: "7px 8px",
     cursor: "pointer",
     fontSize: "0.78rem",
     fontWeight: 600,
