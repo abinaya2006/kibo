@@ -11,8 +11,6 @@ import { petControllerSingleton } from "../../controllers/PetController";
 import { useSelectionHandler } from "../../hooks/useSelectionHandler";
 import { SelectionPopup } from "../SelectionPopup/SelectionPopup";
 
-// console.log("PET_SIZE:", PET_SIZE);
-
 export const PetRenderer: React.FC = () => {
   const store = usePetStore();
   const { pet, isLoaded } = store;
@@ -28,15 +26,15 @@ export const PetRenderer: React.FC = () => {
     x: number;
     y: number;
   } | null>(null);
-  const [dragOffset, setDragOffset] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
+
+  // ── Drag state as refs (no re-renders mid-drag) ──────────────────────────
+  const dragOffset = useRef<{ x: number; y: number } | null>(null);
+  const dragMoved = useRef(false);
 
   const spriteRef = useRef<HTMLDivElement>(null);
 
   // Wire text selection → popup near pet
-  const { handleExplain, handleAskKibo } = useSelectionHandler(
+  const { handleRead, handleExplain } = useSelectionHandler(
     setActiveSpeech,
     (text, x, y) => {
       window.electronAPI?.setIgnoreMouseEvents(false);
@@ -54,13 +52,14 @@ export const PetRenderer: React.FC = () => {
     return () => clearInterval(interval);
   }, [isLoaded, pet.state, pet.mood]);
 
-  // Drag handlers
+  // ── Drag handlers ────────────────────────────────────────────────────────
   const handlePetMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) {
-      setDragOffset({
+      dragOffset.current = {
         x: e.clientX - position.x,
         y: e.clientY - position.y,
-      });
+      };
+      dragMoved.current = false;
       store.setPetStateDirect("beingDragged");
       store.setTargetPosition(null);
       store.setVelocity({ x: 0, y: 0 });
@@ -68,18 +67,31 @@ export const PetRenderer: React.FC = () => {
   };
 
   const handleGlobalMouseMove = (e: MouseEvent) => {
-    if (pet.state === "beingDragged" && dragOffset) {
-      const nextX = e.clientX - dragOffset.x;
-      const nextY = e.clientY - dragOffset.y;
+    if (pet.state === "beingDragged" && dragOffset.current) {
+      const movedX = Math.abs(e.clientX - (position.x + dragOffset.current.x));
+      const movedY = Math.abs(e.clientY - (position.y + dragOffset.current.y));
+
+      // Only mark as a real drag after moving 4px — avoids triggering on click jitter
+      if (movedX > 4 || movedY > 4) {
+        dragMoved.current = true;
+      }
+
+      const nextX = e.clientX - dragOffset.current.x;
+      const nextY = e.clientY - dragOffset.current.y;
       store.setPosition({ x: nextX, y: nextY });
-      petControllerSingleton.behaviorController.handlePetPat();
     }
   };
 
   const handleGlobalMouseUp = () => {
     if (pet.state === "beingDragged") {
+      console.log("mouseup — dragMoved:", dragMoved.current);
+      if (!dragMoved.current) {
+        console.log("firing handlePetPat");
+        petControllerSingleton.behaviorController.handlePetPat();
+      }
       store.setPetStateDirect("idle");
-      setDragOffset(null);
+      dragOffset.current = null;
+      dragMoved.current = false;
       store.touchInteraction();
     }
   };
@@ -91,9 +103,9 @@ export const PetRenderer: React.FC = () => {
       window.removeEventListener("mousemove", handleGlobalMouseMove);
       window.removeEventListener("mouseup", handleGlobalMouseUp);
     };
-  }, [pet.state, dragOffset]);
+  }, [pet.state]);
 
-  // Context menu
+  // ── Context menu ─────────────────────────────────────────────────────────
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     window.electronAPI?.setIgnoreMouseEvents(false);
@@ -107,7 +119,7 @@ export const PetRenderer: React.FC = () => {
     }
   };
 
-  // Mouse enter/leave for pass-through
+  // ── Mouse enter/leave for pass-through ───────────────────────────────────
   const handleMouseEnter = () => {
     window.electronAPI?.setIgnoreMouseEvents(false);
   };
@@ -207,8 +219,8 @@ export const PetRenderer: React.FC = () => {
             text={selectionPopup.text}
             x={selectionPopup.x}
             y={selectionPopup.y}
+            onRead={() => handleRead(selectionPopup.text)}
             onExplain={() => handleExplain(selectionPopup.text)}
-            onAskKibo={() => handleAskKibo(selectionPopup.text)}
             onClose={handleCloseSelectionPopup}
           />
         </>
