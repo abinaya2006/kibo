@@ -42,7 +42,6 @@ export const SelectionPopup: React.FC<SelectionPopupProps> = ({
           boxShadow: "0 12px 40px rgba(0,0,0,0.4)",
           fontFamily: "'Outfit','Inter',sans-serif",
           pointerEvents: "auto",
-          position: "relative",
         }}
       >
         <button

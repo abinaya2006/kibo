@@ -34,7 +34,7 @@ export const PetRenderer: React.FC = () => {
   const spriteRef = useRef<HTMLDivElement>(null);
 
   // Wire text selection → popup near pet
-  const { handleRead, handleExplain } = useSelectionHandler(
+  const { handleRead, handleExplain, handleAskKibo } = useSelectionHandler(
     setActiveSpeech,
     (text, x, y) => {
       window.electronAPI?.setIgnoreMouseEvents(false);
@@ -221,6 +221,7 @@ export const PetRenderer: React.FC = () => {
             y={selectionPopup.y}
             onRead={() => handleRead(selectionPopup.text)}
             onExplain={() => handleExplain(selectionPopup.text)}
+            onAskKibo={() => handleAskKibo(selectionPopup.text)}
             onClose={handleCloseSelectionPopup}
           />
         </>

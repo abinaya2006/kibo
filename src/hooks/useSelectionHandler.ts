@@ -105,11 +105,15 @@ export function useSelectionHandler(
 
   // ── Ask Kibo — opens chat window and sends the question immediately ────────
   const handleAskKibo = useCallback(async (text: string) => {
-    const { sessionId, setPendingSelectionContext } = store;
+    // Fire immediately — don't wait for DB
+    window.electronAPI?.createChatWindow();
 
-    setPendingSelectionContext(text);
+    // Set context so chat window picks it up
+    usePetStore.getState().setPendingSelectionContext(text);
 
+    // Save context message to DB in background (non-blocking)
     try {
+      const { sessionId } = usePetStore.getState();
       const contextMsg = {
         id: crypto.randomUUID(),
         sessionId,
@@ -124,8 +128,6 @@ export function useSelectionHandler(
         err,
       );
     }
-
-    window.electronAPI?.createChatWindow();
   }, []);
 
   return { handleRead, handleExplain, handleAskKibo };
