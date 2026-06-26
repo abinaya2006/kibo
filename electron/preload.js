@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   addMessage: (message) => ipcRenderer.invoke("db:add-message", { message }),
   clearHistory: (sessionId) =>
     ipcRenderer.invoke("db:clear-history", { sessionId }),
+  sendChatContext: (text) => ipcRenderer.invoke("chat:send-context", text),
 
   // ── App & Utilities ────────────────────────────────────────────────────────
   quit: () => ipcRenderer.invoke("app:quit"),
@@ -45,5 +46,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   removeAllListeners: (channel) => {
     ipcRenderer.removeAllListeners(channel);
+  },
+  onChatContext: (callback) => {
+    const sub = (_event, text) => callback(text);
+    ipcRenderer.on("chat:receive-context", sub);
+    return () => ipcRenderer.removeListener("chat:receive-context", sub);
   },
 });

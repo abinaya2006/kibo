@@ -15,7 +15,6 @@ export const ChatWindow: React.FC = () => {
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
 
@@ -25,6 +24,30 @@ export const ChatWindow: React.FC = () => {
 
   useEffect(() => {
     window.electronAPI?.setChatIgnoreMouseEvents(false);
+  }, []);
+
+  // ── Receive highlighted text from pet window via IPC ──────────────────────
+  useEffect(() => {
+    const unsub = window.electronAPI?.onChatContext?.((text: string) => {
+      if (!text?.trim()) return;
+
+      // Store as pending context so ChatController prepends it to next AI call
+      usePetStore.getState().setPendingSelectionContext(text);
+
+      // Show it as an assistant message in the chat
+      const contextMsg: DatabaseMessage = {
+        id: crypto.randomUUID(),
+        sessionId: usePetStore.getState().sessionId,
+        role: "assistant",
+        content: `I see you highlighted:\n\n> "${text}"\n\nWhat would you like to know about it?`,
+        timestamp: Date.now(),
+      };
+
+      // Save to DB then reload so it persists
+      DatabaseService.addMessage(contextMsg).then(() => loadHistory());
+    });
+
+    return () => unsub?.();
   }, []);
 
   const loadHistory = async () => {
@@ -45,7 +68,6 @@ export const ChatWindow: React.FC = () => {
     if (!textToSend.trim() || loading) return;
     setLoading(true);
     setInputText("");
-
     try {
       await chatControllerSingleton.handleSendPrompt(textToSend);
       await loadHistory();
@@ -112,6 +134,7 @@ export const ChatWindow: React.FC = () => {
       onMouseEnter={() => window.electronAPI?.setChatIgnoreMouseEvents(false)}
       onMouseLeave={() => window.electronAPI?.setChatIgnoreMouseEvents(true)}
     >
+      {/* Header */}
       <div
         style={{
           padding: "14px 18px",
@@ -151,7 +174,6 @@ export const ChatWindow: React.FC = () => {
             Lvl {pet.level}
           </span>
         </div>
-
         <div style={{ display: "flex", gap: "8px" }}>
           <button
             onClick={() => window.electronAPI?.createSettingsWindow()}
@@ -183,6 +205,7 @@ export const ChatWindow: React.FC = () => {
         </div>
       </div>
 
+      {/* Body */}
       <div
         style={{
           flex: 1,
@@ -257,7 +280,6 @@ export const ChatWindow: React.FC = () => {
                 <option value="gemini">Google Gemini</option>
                 <option value="groq">Groq</option>
               </select>
-
               <label
                 style={{
                   display: "flex",
@@ -307,7 +329,6 @@ export const ChatWindow: React.FC = () => {
                 />
                 <span>Enable Voice Output</span>
               </label>
-
               <select
                 value={voiceConfig.ttsProvider}
                 onChange={(e) =>
@@ -357,6 +378,7 @@ export const ChatWindow: React.FC = () => {
         )}
       </div>
 
+      {/* Input bar */}
       <form
         onSubmit={handleSubmit}
         style={{
@@ -373,7 +395,6 @@ export const ChatWindow: React.FC = () => {
           isTranscribing={transcribing}
           onToggleRecording={handleToggleRecording}
         />
-
         <input
           type="text"
           value={inputText}
@@ -391,7 +412,6 @@ export const ChatWindow: React.FC = () => {
             outline: "none",
           }}
         />
-
         <button
           type="button"
           onClick={handleReadAloud}
@@ -415,7 +435,6 @@ export const ChatWindow: React.FC = () => {
         >
           🔊
         </button>
-
         <button
           type="submit"
           disabled={loading || !inputText.trim() || recording}

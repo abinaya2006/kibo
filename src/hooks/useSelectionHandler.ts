@@ -107,7 +107,7 @@ export function useSelectionHandler(
   const handleAskKibo = useCallback(async (text: string) => {
     // Fire immediately — don't wait for DB
     window.electronAPI?.createChatWindow();
-
+    window.electronAPI?.sendChatContext(text);
     // Set context so chat window picks it up
     usePetStore.getState().setPendingSelectionContext(text);
 

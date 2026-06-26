@@ -154,6 +154,20 @@ function registerIpcHandlers() {
   ipcMain.handle("app:quit", () => {
     app.quit();
   });
+
+  ipcMain.handle("chat:send-context", (_event, text) => {
+    const chatWin = getChatWindow();
+    if (chatWin && !chatWin.isDestroyed()) {
+      // Window already open — send immediately
+      chatWin.webContents.send("chat:receive-context", text);
+    } else {
+      // Window just created — wait for it to finish loading
+      const newWin = createChatWindow();
+      newWin.webContents.once("did-finish-load", () => {
+        newWin.webContents.send("chat:receive-context", text);
+      });
+    }
+  });
 }
 
 app.whenReady().then(async () => {
