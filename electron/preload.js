@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.invoke("window:set-ignore-mouse", { ignore }),
   getBounds: () => ipcRenderer.invoke("window:get-bounds"),
   getScreenSize: () => ipcRenderer.invoke("window:get-screen-size"),
-  createChatWindow: () => ipcRenderer.invoke("window:create-chat"),
+  createChatWindow: (text) => ipcRenderer.invoke("window:create-chat", text),
   closeChatWindow: () => ipcRenderer.invoke("window:close-chat"),
   setChatIgnoreMouseEvents: (ignore) =>
     ipcRenderer.invoke("window:set-chat-ignore-mouse", { ignore }),
@@ -23,7 +23,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
   addMessage: (message) => ipcRenderer.invoke("db:add-message", { message }),
   clearHistory: (sessionId) =>
     ipcRenderer.invoke("db:clear-history", { sessionId }),
-  sendChatContext: (text) => ipcRenderer.invoke("chat:send-context", text),
 
   // ── App & Utilities ────────────────────────────────────────────────────────
   quit: () => ipcRenderer.invoke("app:quit"),

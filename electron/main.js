@@ -8,6 +8,7 @@ const {
   getPetWindow,
   getChatWindow,
   getSettingsWindow,
+  sendContextToChat,
 } = require("./windowManager");
 const { registerShortcut, unregisterShortcut } = require("./clipboardWatcher");
 const {
@@ -126,10 +127,6 @@ function registerIpcHandlers() {
     return display.workAreaSize;
   });
 
-  ipcMain.handle("window:create-chat", () => {
-    createChatWindow();
-  });
-
   ipcMain.handle("window:close-chat", () => {
     const chatWin = getChatWindow();
     if (chatWin && !chatWin.isDestroyed()) {
@@ -155,18 +152,23 @@ function registerIpcHandlers() {
     app.quit();
   });
 
-  ipcMain.handle("chat:send-context", (_event, text) => {
-    const chatWin = getChatWindow();
-    if (chatWin && !chatWin.isDestroyed()) {
-      // Window already open — send immediately
-      chatWin.webContents.send("chat:receive-context", text);
-    } else {
-      // Window just created — wait for it to finish loading
-      const newWin = createChatWindow();
-      newWin.webContents.once("did-finish-load", () => {
-        newWin.webContents.send("chat:receive-context", text);
-      });
+  // ── Chat window + context ──────────────────────────────────────────────────
+  ipcMain.handle("window:create-chat", (_event, selectedText) => {
+    console.log("[MAIN] window:create-chat called with text:", selectedText);
+
+    const existing = getChatWindow();
+    console.log("[MAIN] existing chatWindow:", existing ? "exists" : "null");
+
+    if (existing && !existing.isDestroyed()) {
+      existing.show();
+      existing.focus();
+      sendContextToChat(existing, selectedText);
+      return;
     }
+
+    const newWin = createChatWindow();
+    console.log("[MAIN] new chatWindow created:", !!newWin);
+    sendContextToChat(newWin, selectedText);
   });
 }
 

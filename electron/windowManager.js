@@ -173,11 +173,36 @@ function getChatWindow() {
   return chatWindow;
 }
 
+function sendContextToChat(win, text) {
+  console.log(
+    "[WINDOW] sendContextToChat called, text:",
+    text,
+    "isLoading:",
+    win.webContents.isLoading(),
+  );
+  if (!text) return;
+  if (win.webContents.isLoading()) {
+    win.webContents.once("did-finish-load", () => {
+      console.log("[WINDOW] did-finish-load fired, sending after 200ms");
+      setTimeout(() => {
+        console.log("[WINDOW] sending chat:receive-context now");
+        win.webContents.send("chat:receive-context", text);
+      }, 200);
+    });
+  } else {
+    setTimeout(() => {
+      console.log("[WINDOW] already loaded, sending chat:receive-context now");
+      win.webContents.send("chat:receive-context", text);
+    }, 200);
+  }
+}
+
 module.exports = {
   createPetWindow,
   createChatWindow,
-  createSettingsWindow, // ← add this
+  createSettingsWindow,
   getPetWindow,
   getChatWindow,
-  getSettingsWindow, // ← add this
+  getSettingsWindow,
+  sendContextToChat, // ← export this
 };

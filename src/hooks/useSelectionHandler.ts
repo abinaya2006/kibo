@@ -131,10 +131,8 @@ export function useSelectionHandler(
   // }, []);
   //
   const handleAskKibo = useCallback(async (text: string) => {
-    // Store text BEFORE opening window so it's ready when window mounts
-    usePetStore.getState().setPendingSelectionContext(text);
-    window.electronAPI?.createChatWindow();
-    // Don't call sendChatContext here — ChatWindow reads from store on mount
+    console.log("[SELECTION] handleAskKibo called with:", text);
+    window.electronAPI?.createChatWindow(text);
   }, []);
 
   return { handleRead, handleExplain, handleAskKibo };

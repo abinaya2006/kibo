@@ -26,29 +26,39 @@ export const ChatWindow: React.FC = () => {
     window.electronAPI?.setChatIgnoreMouseEvents(false);
   }, []);
 
-  // ── Receive highlighted text from pet window via IPC ──────────────────────
+  // ── On mount: pick up any text that was set before this window opened ──────
+  // This handles the race condition where createChatWindow() is called and
+  // the IPC message fires before the listener is registered.
+  useEffect(() => {
+    console.log("[CHAT] registering onChatContext listener");
+    const unsub = window.electronAPI?.onChatContext?.((text: string) => {
+      console.log("[CHAT] onChatContext fired with:", text);
+      if (!text?.trim()) return;
+      injectContextMessage(text);
+    });
+    return () => unsub?.();
+  }, []);
+  // ── Fallback: window already open when text is selected ───────────────────
+  // IPC fires directly into this listener when the chat window is already open.
   useEffect(() => {
     const unsub = window.electronAPI?.onChatContext?.((text: string) => {
       if (!text?.trim()) return;
-
-      // Store as pending context so ChatController prepends it to next AI call
       usePetStore.getState().setPendingSelectionContext(text);
-
-      // Show it as an assistant message in the chat
-      const contextMsg: DatabaseMessage = {
-        id: crypto.randomUUID(),
-        sessionId: usePetStore.getState().sessionId,
-        role: "assistant",
-        content: `I see you highlighted:\n\n> "${text}"\n\nWhat would you like to know about it?`,
-        timestamp: Date.now(),
-      };
-
-      // Save to DB then reload so it persists
-      DatabaseService.addMessage(contextMsg).then(() => loadHistory());
+      injectContextMessage(text);
     });
-
     return () => unsub?.();
   }, []);
+
+  const injectContextMessage = (text: string) => {
+    const contextMsg: DatabaseMessage = {
+      id: crypto.randomUUID(),
+      sessionId: usePetStore.getState().sessionId,
+      role: "assistant",
+      content: `I see you highlighted:\n\n> "${text}"\n\nWhat would you like to know about it?`,
+      timestamp: Date.now(),
+    };
+    DatabaseService.addMessage(contextMsg).then(() => loadHistory());
+  };
 
   const loadHistory = async () => {
     const history = await DatabaseService.getHistory(sessionId);
