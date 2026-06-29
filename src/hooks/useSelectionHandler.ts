@@ -104,30 +104,37 @@ export function useSelectionHandler(
   }, []);
 
   // ── Ask Kibo — opens chat window and sends the question immediately ────────
-  const handleAskKibo = useCallback(async (text: string) => {
-    // Fire immediately — don't wait for DB
-    window.electronAPI?.createChatWindow();
-    window.electronAPI?.sendChatContext(text);
-    // Set context so chat window picks it up
-    usePetStore.getState().setPendingSelectionContext(text);
+  // const handleAskKibo = useCallback(async (text: string) => {
+  //   // Fire immediately — don't wait for DB
+  //   window.electronAPI?.createChatWindow();
+  //   window.electronAPI?.sendChatContext(text);
+  //   // Set context so chat window picks it up
+  //   usePetStore.getState().setPendingSelectionContext(text);
 
-    // Save context message to DB in background (non-blocking)
-    try {
-      const { sessionId } = usePetStore.getState();
-      const contextMsg = {
-        id: crypto.randomUUID(),
-        sessionId,
-        role: "assistant" as const,
-        content: `I see you highlighted:\n\n"${text}"\n\nWhat would you like to know about it?`,
-        timestamp: Date.now(),
-      };
-      await DatabaseService.addMessage(contextMsg);
-    } catch (err) {
-      console.error(
-        "[useSelectionHandler] Failed to save context message:",
-        err,
-      );
-    }
+  //   // Save context message to DB in background (non-blocking)
+  //   try {
+  //     const { sessionId } = usePetStore.getState();
+  //     const contextMsg = {
+  //       id: crypto.randomUUID(),
+  //       sessionId,
+  //       role: "assistant" as const,
+  //       content: `I see you highlighted:\n\n"${text}"\n\nWhat would you like to know about it?`,
+  //       timestamp: Date.now(),
+  //     };
+  //     await DatabaseService.addMessage(contextMsg);
+  //   } catch (err) {
+  //     console.error(
+  //       "[useSelectionHandler] Failed to save context message:",
+  //       err,
+  //     );
+  //   }
+  // }, []);
+  //
+  const handleAskKibo = useCallback(async (text: string) => {
+    // Store text BEFORE opening window so it's ready when window mounts
+    usePetStore.getState().setPendingSelectionContext(text);
+    window.electronAPI?.createChatWindow();
+    // Don't call sendChatContext here — ChatWindow reads from store on mount
   }, []);
 
   return { handleRead, handleExplain, handleAskKibo };
