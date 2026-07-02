@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-const { app, ipcMain, screen, Tray, Menu, nativeImage } = require("electron");
-const path = require("path");
-const {
+import { app, ipcMain, screen, Tray, Menu, nativeImage } from "electron";
+import {
   createPetWindow,
   createChatWindow,
   createSettingsWindow,
@@ -9,22 +7,23 @@ const {
   getChatWindow,
   getSettingsWindow,
   sendContextToChat,
-} = require("./windowManager");
-const { registerShortcut, unregisterShortcut } = require("./clipboardWatcher");
-const {
+} from "./windowManager.js";
+import { registerShortcut, unregisterShortcut } from "./clipboardWatcher.js";
+import {
   initDatabase,
   saveMessage,
   getMessages,
   clearMessages,
   closeDatabase,
-} = require("./database/db");
+} from "./database/db.cjs";
+import { bootstrapSkills } from "./bootstrap.ts";
 
 let store = null;
 let tray = null;
 
 async function initStore() {
   try {
-    const Store = require("electron-store");
+    const { default: Store } = await import("electron-store");
     store = new Store({ name: "desktop-pet-data" });
   } catch (err) {
     console.warn("[Store] electron-store unavailable:", err.message);
@@ -176,6 +175,7 @@ app.whenReady().then(async () => {
   await initStore();
   initDatabase(app);
   registerIpcHandlers();
+  bootstrapSkills();
 
   createPetWindow();
   initTray();

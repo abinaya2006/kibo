@@ -1,17 +1,17 @@
-const path = require('path');
-const fs = require('fs');
+const path = require("path");
+const fs = require("fs");
 
 let dbInstance = null;
 let useFallback = false;
-let jsonDbPath = '';
+let jsonDbPath = "";
 
 function initDatabase(app) {
-  const userDataPath = app.getPath('userData');
-  jsonDbPath = path.join(userDataPath, 'memory_fallback.json');
+  const userDataPath = app.getPath("userData");
+  jsonDbPath = path.join(userDataPath, "memory_fallback.json");
 
   try {
-    const Database = require('better-sqlite3');
-    const dbPath = path.join(userDataPath, 'pixel_pet_memory.db');
+    const Database = require("better-sqlite3");
+    const dbPath = path.join(userDataPath, "pixel_pet_memory.db");
     dbInstance = new Database(dbPath);
 
     // Bootstrap table architecture
@@ -40,18 +40,36 @@ function initDatabase(app) {
         last_interaction INTEGER NOT NULL
       );
     `);
-    
-    // Add columns dynamically in case the DB was already created without them
-    try { dbInstance.exec("ALTER TABLE pet_profile ADD COLUMN relationship INTEGER DEFAULT 0;"); } catch (e) {}
-    try { dbInstance.exec("ALTER TABLE pet_profile ADD COLUMN hunger INTEGER DEFAULT 80;"); } catch (e) {}
-    try { dbInstance.exec("ALTER TABLE pet_profile ADD COLUMN social INTEGER DEFAULT 80;"); } catch (e) {}
 
-    console.log('[Database] Native SQLite initialized at:', dbPath);
+    // Add columns dynamically in case the DB was already created without them
+    try {
+      dbInstance.exec(
+        "ALTER TABLE pet_profile ADD COLUMN relationship INTEGER DEFAULT 0;",
+      );
+    } catch (e) {}
+    try {
+      dbInstance.exec(
+        "ALTER TABLE pet_profile ADD COLUMN hunger INTEGER DEFAULT 80;",
+      );
+    } catch (e) {}
+    try {
+      dbInstance.exec(
+        "ALTER TABLE pet_profile ADD COLUMN social INTEGER DEFAULT 80;",
+      );
+    } catch (e) {}
+
+    console.log("[Database] Native SQLite initialized at:", dbPath);
   } catch (err) {
-    console.warn('[Database] Native SQLite load failed, falling back to JSON storage:', err.message);
+    console.warn(
+      "[Database] Native SQLite load failed, falling back to JSON storage:",
+      err.message,
+    );
     useFallback = true;
     if (!fs.existsSync(jsonDbPath)) {
-      fs.writeFileSync(jsonDbPath, JSON.stringify({ conversations: [], profile: null }, null, 2));
+      fs.writeFileSync(
+        jsonDbPath,
+        JSON.stringify({ conversations: [], profile: null }, null, 2),
+      );
     }
   }
 }
@@ -61,11 +79,11 @@ function initDatabase(app) {
 function saveMessage(msg) {
   if (useFallback) {
     try {
-      const data = JSON.parse(fs.readFileSync(jsonDbPath, 'utf8'));
+      const data = JSON.parse(fs.readFileSync(jsonDbPath, "utf8"));
       data.conversations.push(msg);
       fs.writeFileSync(jsonDbPath, JSON.stringify(data, null, 2));
     } catch (err) {
-      console.error('[Database Fallback] Failed saving message:', err);
+      console.error("[Database Fallback] Failed saving message:", err);
     }
     return;
   }
@@ -77,15 +95,15 @@ function saveMessage(msg) {
     `);
     stmt.run(msg.id, msg.sessionId, msg.role, msg.content, msg.timestamp);
   } catch (err) {
-    console.error('[Database] Failed to insert message:', err);
+    console.error("[Database] Failed to insert message:", err);
   }
 }
 
 function getMessages(sessionId) {
   if (useFallback) {
     try {
-      const data = JSON.parse(fs.readFileSync(jsonDbPath, 'utf8'));
-      return data.conversations.filter(c => c.sessionId === sessionId);
+      const data = JSON.parse(fs.readFileSync(jsonDbPath, "utf8"));
+      return data.conversations.filter((c) => c.sessionId === sessionId);
     } catch {
       return [];
     }
@@ -100,7 +118,7 @@ function getMessages(sessionId) {
     `);
     return stmt.all(sessionId);
   } catch (err) {
-    console.error('[Database] Load history failed:', err);
+    console.error("[Database] Load history failed:", err);
     return [];
   }
 }
@@ -108,20 +126,24 @@ function getMessages(sessionId) {
 function clearMessages(sessionId) {
   if (useFallback) {
     try {
-      const data = JSON.parse(fs.readFileSync(jsonDbPath, 'utf8'));
-      data.conversations = data.conversations.filter(c => c.sessionId !== sessionId);
+      const data = JSON.parse(fs.readFileSync(jsonDbPath, "utf8"));
+      data.conversations = data.conversations.filter(
+        (c) => c.sessionId !== sessionId,
+      );
       fs.writeFileSync(jsonDbPath, JSON.stringify(data, null, 2));
     } catch (err) {
-      console.error('[Database Fallback] Failed clearing history:', err);
+      console.error("[Database Fallback] Failed clearing history:", err);
     }
     return;
   }
 
   try {
-    const stmt = dbInstance.prepare(`DELETE FROM conversation_history WHERE session_id = ?`);
+    const stmt = dbInstance.prepare(
+      `DELETE FROM conversation_history WHERE session_id = ?`,
+    );
     stmt.run(sessionId);
   } catch (err) {
-    console.error('[Database] Failed to delete history:', err);
+    console.error("[Database] Failed to delete history:", err);
   }
 }
 
@@ -129,7 +151,9 @@ function closeDatabase() {
   if (dbInstance) {
     try {
       dbInstance.close();
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -138,5 +162,5 @@ module.exports = {
   saveMessage,
   getMessages,
   clearMessages,
-  closeDatabase
+  closeDatabase,
 };
