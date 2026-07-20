@@ -1,4 +1,4 @@
-import { Skill, SkillMetadata } from "../models/types.ts";
+import type { Skill, SkillMetadata } from "../models/types.ts";
 
 /**
  * Step 1 stub. Real confirmation UI (chat prompt / dialog) gets wired

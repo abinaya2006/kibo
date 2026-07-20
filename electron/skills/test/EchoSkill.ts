@@ -1,5 +1,6 @@
-import { Skill, SkillMetadata, SkillResult } from "../../models/types.ts";
-import { FieldSchema, validateArgs } from "../../security/ActionSchema.ts";
+import type { Skill, SkillMetadata, SkillResult } from "../../models/types.ts";
+import type { FieldSchema } from "../../security/ActionSchema.ts";
+import { validateArgs } from "../../security/ActionSchema.ts";
 
 interface EchoArgs {
   message: string;

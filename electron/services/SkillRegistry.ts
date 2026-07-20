@@ -1,4 +1,4 @@
-import {
+import type {
   AuditEntry,
   Skill,
   SkillMetadata,
