@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { usePetStore } from "../../state/usePetStore";
-import { SPECIES_CONFIGS } from "../../models/PetConfig";
+// SPECIES_CONFIGS unused now that "change companion" is disabled
+// import { SPECIES_CONFIGS } from "../../models/PetConfig";
 import { ActionController } from "../../controllers/ActionController";
 
 interface PetContextMenuProps {
@@ -9,13 +10,14 @@ interface PetContextMenuProps {
   onClose: () => void;
 }
 
+// Trimmed to food that actually makes sense for a pet — dropped Cookie/Cake/Berry
 const FOOD_ITEMS = [
   { emoji: "🍖", label: "Meat", hunger: 40, happiness: 15 },
   { emoji: "🐟", label: "Fish", hunger: 35, happiness: 20 },
-  { emoji: "🍪", label: "Cookie", hunger: 20, happiness: 30 },
   { emoji: "🥕", label: "Carrot", hunger: 25, happiness: 10 },
-  { emoji: "🍓", label: "Berry", hunger: 15, happiness: 25 },
-  { emoji: "🎂", label: "Cake", hunger: 30, happiness: 40 },
+  // { emoji: "🍪", label: "Cookie", hunger: 20, happiness: 30 },
+  // { emoji: "🍓", label: "Berry", hunger: 15, happiness: 25 },
+  // { emoji: "🎂", label: "Cake", hunger: 30, happiness: 40 },
 ];
 
 export const PetContextMenu: React.FC<PetContextMenuProps> = ({
@@ -25,23 +27,23 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
 }) => {
   const store = usePetStore();
   const { pet } = store;
-  const [editingName, setEditingName] = useState(false);
-  const [nameVal, setNameVal] = useState(pet.name);
+  // const [editingName, setEditingName] = useState(false);
+  // const [nameVal, setNameVal] = useState(pet.name);
   const [showFoodPicker, setShowFoodPicker] = useState(false);
 
-  const handleSpeciesChange = (species: string) => {
-    store.setPet({ ...pet, species, physics: { ...pet.physics } });
-    onClose();
-  };
+  // const handleSpeciesChange = (species: string) => {
+  //   store.setPet({ ...pet, species, physics: { ...pet.physics } });
+  //   onClose();
+  // };
 
-  const handleRenameSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (nameVal.trim()) {
-      store.setName(nameVal.trim());
-      setEditingName(false);
-      onClose();
-    }
-  };
+  // const handleRenameSubmit = (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   if (nameVal.trim()) {
+  //     store.setName(nameVal.trim());
+  //     setEditingName(false);
+  //     onClose();
+  //   }
+  // };
 
   const handleFeed = (food: (typeof FOOD_ITEMS)[number]) => {
     ActionController.feedWithFood(food);
@@ -83,7 +85,8 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
           borderBottom: "1px solid rgba(0,0,0,0.06)",
         }}
       >
-        {editingName ? (
+        {/* Rename UI disabled — pet is always Kibo */}
+        {/* {editingName ? (
           <form
             onSubmit={handleRenameSubmit}
             style={{ display: "flex", gap: "4px" }}
@@ -138,7 +141,16 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
               Rename
             </button>
           </div>
-        )}
+        )} */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <strong style={{ fontSize: "0.9rem" }}>{pet.name}</strong>
+        </div>
         <div style={{ fontSize: "0.7rem", color: "#7f8c8d", marginTop: "2px" }}>
           Mood:{" "}
           <span style={{ fontWeight: 600 }}>{pet.mood.toUpperCase()}</span>
@@ -262,15 +274,17 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
                   ▶
                 </span>
               </button>
-              <button
+              {/*<button
                 style={menuItemStyle}
                 onClick={() => handleInteract("think")}
               >
                 💡 Meditate
-              </button>
+              </button>*/}
             </>
           )}
 
+          {/* Change companion (species swap) disabled */}
+          {/*
           <div
             style={{
               margin: "4px 0",
@@ -296,6 +310,7 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
               {(config as any).displayName}
             </button>
           ))}
+          */}
 
           <div
             style={{

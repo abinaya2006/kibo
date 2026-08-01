@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { usePetStore } from "../../state/usePetStore";
 import { DatabaseService } from "../../services/DatabaseService";
 import { chatControllerSingleton } from "../../controllers/ChatController";
-import { MessageList } from "./MessageList";
+import { MessageList, stripEmoji } from "./MessageList";
 import { VoiceInput } from "./VoiceInput";
 import { VoiceManager } from "../../services/VoiceManager";
 import type { DatabaseMessage } from "../../models/types";
@@ -17,6 +17,8 @@ export const ChatWindow: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [speakingId, setSpeakingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadHistory();
@@ -26,20 +28,10 @@ export const ChatWindow: React.FC = () => {
     window.electronAPI?.setChatIgnoreMouseEvents(false);
   }, []);
 
-  // ── On mount: pick up any text that was set before this window opened ──────
-  // This handles the race condition where createChatWindow() is called and
-  // the IPC message fires before the listener is registered.
-  useEffect(() => {
-    console.log("[CHAT] registering onChatContext listener");
-    const unsub = window.electronAPI?.onChatContext?.((text: string) => {
-      console.log("[CHAT] onChatContext fired with:", text);
-      if (!text?.trim()) return;
-      injectContextMessage(text);
-    });
-    return () => unsub?.();
-  }, []);
-  // ── Fallback: window already open when text is selected ───────────────────
-  // IPC fires directly into this listener when the chat window is already open.
+  // ── Single listener for highlighted-text context ────────────────────────────
+  // Handles both cases: window already open when text is selected, and the
+  // race where createChatWindow() fires before this listener registers
+  // (main process retries delivery via sendContextToChat's did-finish-load hook).
   useEffect(() => {
     const unsub = window.electronAPI?.onChatContext?.((text: string) => {
       if (!text?.trim()) return;
@@ -65,12 +57,25 @@ export const ChatWindow: React.FC = () => {
     setMessages(history);
   };
 
-  const handleReadAloud = async () => {
-    if (!inputText.trim()) return;
+  // Only fires when the speaker icon on a message bubble is clicked.
+  // Clicking the bubble that's already speaking stops playback instead of restarting it.
+  const handleSpeakMessage = async (id: string, text: string) => {
+    if (speakingId === id) {
+      VoiceManager.stop?.();
+      setSpeakingId(null);
+      return;
+    }
+    if (!text.trim()) return;
+    const cleaned = stripEmoji(text);
+    if (!cleaned) return;
     try {
-      await VoiceManager.speak(inputText, voiceConfig, apiConfig.apiKey, true);
+      VoiceManager.stop?.(); // cut off any other message currently playing
+      setSpeakingId(id);
+      await VoiceManager.speak(cleaned, voiceConfig, apiConfig.apiKey, true);
     } catch (err) {
       console.error("Failed to read aloud:", err);
+    } finally {
+      setSpeakingId((current) => (current === id ? null : current));
     }
   };
 
@@ -129,17 +134,22 @@ export const ChatWindow: React.FC = () => {
   return (
     <div
       style={{
-        width: "100%",
-        height: "100%",
+        width: isFullscreen ? "100vw" : "100%",
+        height: isFullscreen ? "100vh" : "100%",
+        position: isFullscreen ? "fixed" : "relative",
+        top: isFullscreen ? 0 : undefined,
+        left: isFullscreen ? 0 : undefined,
+        zIndex: isFullscreen ? 10000 : undefined,
         background: "#151520",
         display: "flex",
         flexDirection: "column",
-        borderRadius: "16px",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        borderRadius: isFullscreen ? 0 : "16px",
+        border: isFullscreen ? "none" : "1px solid rgba(255, 255, 255, 0.08)",
         overflow: "hidden",
         boxShadow: "0 20px 50px rgba(0,0,0,0.35)",
         color: "#ffffff",
         fontFamily: "'Outfit', sans-serif",
+        transition: "border-radius 0.15s",
       }}
       onMouseEnter={() => window.electronAPI?.setChatIgnoreMouseEvents(false)}
       onMouseLeave={() => window.electronAPI?.setChatIgnoreMouseEvents(true)}
@@ -186,6 +196,24 @@ export const ChatWindow: React.FC = () => {
         </div>
         <div style={{ display: "flex", gap: "8px" }}>
           <button
+            onClick={() => {
+              const next = !isFullscreen;
+              setIsFullscreen(next);
+              // Temporarily disabled — was corrupting chat window bounds
+              // window.electronAPI?.setChatFullscreen(next);
+            }}
+            style={{
+              background: "none",
+              border: "none",
+              color: isFullscreen ? "#3498db" : "#95a5a6",
+              cursor: "pointer",
+              fontSize: "1rem",
+            }}
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          >
+            {isFullscreen ? "🗗" : "🗖"}
+          </button>
+          <button
             onClick={() => window.electronAPI?.createSettingsWindow()}
             style={{
               background: "none",
@@ -222,9 +250,17 @@ export const ChatWindow: React.FC = () => {
           display: "flex",
           position: "relative",
           overflow: "hidden",
+          minHeight: 0,
         }}
       >
-        <MessageList messages={messages} />
+        <MessageList
+          messages={messages}
+          onSpeak={(text) => {
+            const msg = messages.find((m) => m.content === text);
+            handleSpeakMessage(msg?.id ?? text, text);
+          }}
+          speakingId={speakingId}
+        />
 
         {showSettings && (
           <div
@@ -388,7 +424,7 @@ export const ChatWindow: React.FC = () => {
         )}
       </div>
 
-      {/* Input bar */}
+      {/* Input bar — speaker button removed; reading aloud now happens per-message */}
       <form
         onSubmit={handleSubmit}
         style={{
@@ -413,6 +449,7 @@ export const ChatWindow: React.FC = () => {
           placeholder={recording ? "Speak now..." : "Ask companion..."}
           style={{
             flex: 1,
+            minWidth: 0,
             background: "rgba(255, 255, 255, 0.04)",
             border: "1px solid rgba(255, 255, 255, 0.1)",
             borderRadius: "20px",
@@ -422,29 +459,6 @@ export const ChatWindow: React.FC = () => {
             outline: "none",
           }}
         />
-        <button
-          type="button"
-          onClick={handleReadAloud}
-          disabled={!inputText.trim() || recording}
-          style={{
-            background: !inputText.trim()
-              ? "rgba(255, 255, 255, 0.05)"
-              : "#9b59b6",
-            color: "#fff",
-            border: "none",
-            borderRadius: "50%",
-            width: "34px",
-            height: "34px",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: "1.2rem",
-          }}
-          title="Read Aloud"
-        >
-          🔊
-        </button>
         <button
           type="submit"
           disabled={loading || !inputText.trim() || recording}
@@ -462,6 +476,7 @@ export const ChatWindow: React.FC = () => {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            flexShrink: 0,
           }}
         >
           ➔

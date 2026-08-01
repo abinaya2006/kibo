@@ -20,7 +20,8 @@ export const SettingsWindow: React.FC = () => {
   const [voiceEnabled, setVoiceEnabled] = useState(store.voiceConfig.enabled);
 
   const [personality, setPersonality] = useState(store.pet.personality);
-  const [petName, setPetName] = useState(store.pet.name);
+  // Name editing disabled — pet is always Kibo
+  // const [petName, setPetName] = useState(store.pet.name);
 
   const handleSave = () => {
     store.setApiConfig({ provider: apiProvider, apiKey, model, temperature });
@@ -31,7 +32,7 @@ export const SettingsWindow: React.FC = () => {
       enabled: voiceEnabled,
     });
     store.setPersonality(personality);
-    store.setName(petName);
+    // store.setName(petName);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -81,7 +82,7 @@ export const SettingsWindow: React.FC = () => {
               letterSpacing: "0.02em",
             }}
           >
-            Pixel Pet Settings
+            Kibo Settings
           </span>
         </div>
         <button
@@ -372,7 +373,7 @@ export const SettingsWindow: React.FC = () => {
               }}
             >
               💡 Shortcut: <strong>Alt+Shift+A</strong> — highlight any text
-              then press this to have Luna read it aloud.
+              then press this to have kibo read it aloud.
             </div>
           </div>
         )}
@@ -382,16 +383,19 @@ export const SettingsWindow: React.FC = () => {
           <div
             style={{ display: "flex", flexDirection: "column", gap: "16px" }}
           >
+            {/* Pet Name field disabled — pet is always Kibo */}
+            {/*
             <Field label="Pet Name">
               <input
                 type="text"
                 value={petName}
                 onChange={(e) => setPetName(e.target.value)}
                 maxLength={12}
-                placeholder="Luna"
+                placeholder="kibo"
                 style={inputStyle}
               />
             </Field>
+            */}
 
             <Field label="Personality">
               <Select
@@ -425,7 +429,7 @@ export const SettingsWindow: React.FC = () => {
                   marginTop: "4px",
                 }}
               >
-                Affects how Luna responds in chat and behaves on screen.
+                Affects how kibo responds in chat and behaves on screen.
               </div>
             </Field>
 
@@ -450,7 +454,7 @@ export const SettingsWindow: React.FC = () => {
                 KEYBOARD SHORTCUTS
               </div>
               <div>
-                <kbd style={kbdStyle}>Alt+Shift+A</kbd> Read / Ask Luna about
+                <kbd style={kbdStyle}>Alt+Shift+A</kbd> Read / Ask kibo about
                 selected text
               </div>
             </div>

@@ -248,3 +248,30 @@ export const usePetStore = create<PetStore>()(
     resetPet: () => set({ pet: createDefaultPet() }),
   })),
 );
+
+// ─── Cross-window sync ───────────────────────────────────────────────────────
+// Each BrowserWindow (pet / chat / settings) has its own independent JS
+// context and therefore its own store instance, all reading the same
+// localStorage. Without this, a window only sees the config it had at boot —
+// e.g. saving an API key in Settings never reaches the already-open pet
+// window, so actions run from the pet window (like "Explain") fail while
+// actions run from a freshly-opened window (like "Ask Kibo") succeed, because
+// that window mounts fresh and reads the current localStorage value.
+//
+// The native `storage` event fires in *other* same-origin windows whenever
+// one of them writes to localStorage (it never fires in the window that made
+// the write itself), so we use it to keep every window's store in sync.
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (e) => {
+    if (e.key === "pixel-pet-api-config" && e.newValue) {
+      try {
+        usePetStore.setState({ apiConfig: JSON.parse(e.newValue) });
+      } catch {}
+    }
+    if (e.key === "pixel-pet-voice-config" && e.newValue) {
+      try {
+        usePetStore.setState({ voiceConfig: JSON.parse(e.newValue) });
+      } catch {}
+    }
+  });
+}
