@@ -1,10 +1,33 @@
-const { BrowserWindow, screen, shell } = require("electron");
-const path = require("path");
+import { BrowserWindow, screen, shell } from "electron";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let petWindow = null;
 let chatWindow = null;
 
-function createPetWindow() {
+const DEV_SERVER_URL = "http://localhost:5173";
+const RETRY_DELAY_MS = 1000;
+
+function loadWithRetry(win, url, label) {
+  win.loadURL(url);
+  win.webContents.on("did-fail-load", (event, errorCode, errorDescription) => {
+    // -3 is ERR_ABORTED, which fires on normal navigations (e.g. hash changes) — ignore it
+    if (errorCode === -3) return;
+    console.log(
+      `[${label}] Failed to load (${errorCode} ${errorDescription}) — retrying in ${RETRY_DELAY_MS}ms`,
+    );
+    setTimeout(() => {
+      if (!win.isDestroyed()) {
+        win.loadURL(url);
+      }
+    }, RETRY_DELAY_MS);
+  });
+}
+
+export function createPetWindow() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
 
@@ -20,7 +43,7 @@ function createPetWindow() {
     resizable: false,
     skipTaskbar: true,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.cjs"),
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -33,7 +56,7 @@ function createPetWindow() {
     process.env.NODE_ENV === "development" ||
     !process.env.PORTABLE_EXECUTABLE_DIR;
   if (isDev) {
-    petWindow.loadURL("http://localhost:5173");
+    loadWithRetry(petWindow, DEV_SERVER_URL, "PET WINDOW");
   } else {
     petWindow.loadFile(path.join(__dirname, "../dist/index.html"));
   }
@@ -45,7 +68,7 @@ function createPetWindow() {
   return petWindow;
 }
 
-function createChatWindow() {
+export function createChatWindow() {
   if (chatWindow && !chatWindow.isDestroyed()) {
     chatWindow.focus();
     return chatWindow;
@@ -70,7 +93,7 @@ function createChatWindow() {
     skipTaskbar: false,
     resizable: true,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.cjs"),
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -84,7 +107,7 @@ function createChatWindow() {
     !process.env.PORTABLE_EXECUTABLE_DIR;
   if (isDev) {
     // Append routing hash or search param to distinguish windows in React
-    chatWindow.loadURL("http://localhost:5173?window=chat");
+    loadWithRetry(chatWindow, `${DEV_SERVER_URL}?window=chat`, "CHAT WINDOW");
   } else {
     chatWindow.loadFile(path.join(__dirname, "../dist/index.html"), {
       query: { window: "chat" },
@@ -105,7 +128,7 @@ function createChatWindow() {
 
 let settingsWindow = null;
 
-function createSettingsWindow() {
+export function createSettingsWindow() {
   if (settingsWindow && !settingsWindow.isDestroyed()) {
     settingsWindow.focus();
     return settingsWindow;
@@ -130,7 +153,7 @@ function createSettingsWindow() {
     skipTaskbar: false,
     resizable: false,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.cjs"),
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -142,7 +165,11 @@ function createSettingsWindow() {
     process.env.NODE_ENV === "development" ||
     !process.env.PORTABLE_EXECUTABLE_DIR;
   if (isDev) {
-    settingsWindow.loadURL("http://localhost:5173?window=settings");
+    loadWithRetry(
+      settingsWindow,
+      `${DEV_SERVER_URL}?window=settings`,
+      "SETTINGS WINDOW",
+    );
   } else {
     settingsWindow.loadFile(path.join(__dirname, "../dist/index.html"), {
       query: { window: "settings" },
@@ -161,19 +188,19 @@ function createSettingsWindow() {
   return settingsWindow;
 }
 
-function getSettingsWindow() {
+export function getSettingsWindow() {
   return settingsWindow;
 }
 
-function getPetWindow() {
+export function getPetWindow() {
   return petWindow;
 }
 
-function getChatWindow() {
+export function getChatWindow() {
   return chatWindow;
 }
 
-function sendContextToChat(win, text) {
+export function sendContextToChat(win, text) {
   console.log(
     "[WINDOW] sendContextToChat called, text:",
     text,
@@ -196,13 +223,3 @@ function sendContextToChat(win, text) {
     }, 200);
   }
 }
-
-module.exports = {
-  createPetWindow,
-  createChatWindow,
-  createSettingsWindow,
-  getPetWindow,
-  getChatWindow,
-  getSettingsWindow,
-  sendContextToChat, // ← export this
-};
