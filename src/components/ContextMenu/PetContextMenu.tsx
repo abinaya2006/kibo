@@ -10,15 +10,113 @@ interface PetContextMenuProps {
   onClose: () => void;
 }
 
-// Trimmed to food that actually makes sense for a pet — dropped Cookie/Cake/Berry
+/* ------------------------------------------------------------------ */
+/* Hand-drawn line icons (ink-on-parchment style, no emoji fonts)      */
+/* ------------------------------------------------------------------ */
+
+const iconProps = {
+  width: 16,
+  height: 16,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.5,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
+
+const MoonIcon = () => (
+  <svg {...iconProps}>
+    <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5Z" />
+  </svg>
+);
+
+const SunIcon = () => (
+  <svg {...iconProps}>
+    <circle cx="12" cy="12" r="4.2" />
+    <path d="M12 3v2.2M12 18.8V21M21 12h-2.2M5.2 12H3M18.1 5.9l-1.5 1.5M7.4 16.6l-1.5 1.5M18.1 18.1l-1.5-1.5M7.4 7.4 5.9 5.9" />
+  </svg>
+);
+
+const YarnIcon = () => (
+  <svg {...iconProps}>
+    <circle cx="12" cy="12" r="7.5" />
+    <path d="M5 9.5c3 1.4 5 1.4 8-.3M4.7 14c4 .8 8.5.6 12.6-1.6M7 18c4-.4 8-2 10-4.4" />
+  </svg>
+);
+
+const FishIcon = () => (
+  <svg {...iconProps}>
+    <path d="M3 12c3-4 8-6 12-4.5 2 .8 3.5 2.4 4.5 4.5-1 2.1-2.5 3.7-4.5 4.5-4 1.5-9-.5-12-4.5Z" />
+    <path d="M19.5 12 22 9M19.5 12 22 15" />
+    <circle cx="8.3" cy="11" r="0.6" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+const DrumstickIcon = () => (
+  <svg {...iconProps}>
+    <path d="M14.5 13.5c-2 2-4.8 3.4-7 3.9-1.1.2-2-.7-1.8-1.8.5-2.2 1.9-5 3.9-7 2.3-2.3 5.4-3 6.9-1.5s.8 4.6-1.5 6.9c-.2.2-.3.3-.5.5Z" />
+    <path d="M14 14 19.5 19.5M17 11.5c1.6-1.6 2.2-3.6 1.3-4.5" />
+  </svg>
+);
+
+const MilkIcon = () => (
+  <svg {...iconProps}>
+    <path d="M9.5 3h5l.7 3.2c.9.9 1.3 1.7 1.3 3v9.8a2 2 0 0 1-2 2h-5a2 2 0 0 1-2-2V9.2c0-1.3.4-2.1 1.3-3L9.5 3Z" />
+    <path d="M8.5 13h7M9.5 3h5" />
+  </svg>
+);
+
+const BowlIcon = () => (
+  <svg {...iconProps}>
+    <path d="M4 12h16c0 3.5-3.6 6.3-8 6.3S4 15.5 4 12Z" />
+    <path d="M6.5 12c.2-2 1.8-3.4 3.5-3.7M12 7.7c1.8 0 3.3 1.7 3.6 3.6" />
+  </svg>
+);
+
+const GearIcon = () => (
+  <svg {...iconProps}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 3.5v2.3M12 18.2v2.3M20.5 12h-2.3M5.8 12H3.5M17.7 6.3l-1.6 1.6M7.9 16.1l-1.6 1.6M17.7 17.7l-1.6-1.6M7.9 7.9 6.3 6.3" />
+  </svg>
+);
+
+const DoorIcon = () => (
+  <svg {...iconProps}>
+    <path d="M6 3.5h9v17H6z" />
+    <path d="M6 3.5 4 4.8v14.4l2 1.3M12.3 12v.1" />
+    <path d="M17 8.5 20 12l-3 3.5" />
+  </svg>
+);
+
+const TwigCrossIcon = () => (
+  <svg {...iconProps} width={12} height={12}>
+    <path d="M6 6 18 18M18 6 6 18" />
+  </svg>
+);
+
+const LeafArrowIcon = () => (
+  <svg {...iconProps} width={12} height={12}>
+    <path d="M6 4c6 1.5 10 4.6 12 8-2 3.4-6 6.5-12 8 2-3.6 3-5.4 3-8s-1-4.4-3-8Z" />
+  </svg>
+);
+
+/* ------------------------------------------------------------------ */
+
 const FOOD_ITEMS = [
-  { emoji: "🍖", label: "Meat", hunger: 40, happiness: 15 },
-  { emoji: "🐟", label: "Fish", hunger: 35, happiness: 20 },
-  { emoji: "🥕", label: "Carrot", hunger: 25, happiness: 10 },
-  // { emoji: "🍪", label: "Cookie", hunger: 20, happiness: 30 },
-  // { emoji: "🍓", label: "Berry", hunger: 15, happiness: 25 },
-  // { emoji: "🎂", label: "Cake", hunger: 30, happiness: 40 },
+  { icon: DrumstickIcon, label: "Meat", hunger: 40, happiness: 15 },
+  { icon: FishIcon, label: "Fish", hunger: 35, happiness: 20 },
+  { icon: MilkIcon, label: "Milk", hunger: 10, happiness: 12 },
 ];
+
+/* Ghibli-inspired palette: parchment, ink, moss, and warm candlelight */
+const ink = "#3a3226";
+const inkSoft = "#8a7a63";
+const inkFaint = "rgba(91,74,58,0.16)";
+const parchment = "linear-gradient(160deg, #f8f1dd 0%, #ede1c3 100%)";
+const candlelight = "rgba(214,176,111,0.32)";
+const candlelightSoft = "rgba(214,176,111,0.18)";
+const rust = "#a85a41";
 
 export const PetContextMenu: React.FC<PetContextMenuProps> = ({
   x,
@@ -27,23 +125,7 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
 }) => {
   const store = usePetStore();
   const { pet } = store;
-  // const [editingName, setEditingName] = useState(false);
-  // const [nameVal, setNameVal] = useState(pet.name);
   const [showFoodPicker, setShowFoodPicker] = useState(false);
-
-  // const handleSpeciesChange = (species: string) => {
-  //   store.setPet({ ...pet, species, physics: { ...pet.physics } });
-  //   onClose();
-  // };
-
-  // const handleRenameSubmit = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   if (nameVal.trim()) {
-  //     store.setName(nameVal.trim());
-  //     setEditingName(false);
-  //     onClose();
-  //   }
-  // };
 
   const handleFeed = (food: (typeof FOOD_ITEMS)[number]) => {
     ActionController.feedWithFood(food);
@@ -58,23 +140,30 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
     onClose();
   };
 
+  const onEnterHover = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.background = candlelight;
+  };
+  const onLeaveHover = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.background = "transparent";
+  };
+
   return (
     <div
       style={{
         position: "fixed",
         left: `${x}px`,
         top: `${y}px`,
-        background: "rgba(255,255,255,0.95)",
-        backdropFilter: "blur(12px)",
-        border: "1px solid rgba(255,255,255,0.6)",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-        borderRadius: "16px",
+        background: parchment,
+        border: `1px solid ${inkFaint}`,
+        boxShadow:
+          "0 14px 30px rgba(58,50,38,0.20), 0 2px 6px rgba(58,50,38,0.12)",
+        borderRadius: "14px 16px 14px 16px",
         padding: "10px",
         zIndex: 9999,
-        minWidth: "160px",
-        fontFamily: "'Outfit','Inter',sans-serif",
+        minWidth: "170px",
+        fontFamily: "'Iowan Old Style','Palatino Linotype',Georgia,serif",
         fontSize: "0.85rem",
-        color: "#2c3e50",
+        color: ink,
         pointerEvents: "auto",
       }}
     >
@@ -82,66 +171,9 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
       <div
         style={{
           padding: "6px 8px",
-          borderBottom: "1px solid rgba(0,0,0,0.06)",
+          borderBottom: `1px solid ${inkFaint}`,
         }}
       >
-        {/* Rename UI disabled — pet is always Kibo */}
-        {/* {editingName ? (
-          <form
-            onSubmit={handleRenameSubmit}
-            style={{ display: "flex", gap: "4px" }}
-          >
-            <input
-              type="text"
-              value={nameVal}
-              onChange={(e) => setNameVal(e.target.value)}
-              autoFocus
-              maxLength={12}
-              style={{
-                width: "100%",
-                border: "1px solid #ddd",
-                borderRadius: "6px",
-                padding: "2px 6px",
-                fontSize: "0.8rem",
-              }}
-            />
-            <button
-              type="submit"
-              style={{
-                border: "none",
-                background: "#4cd137",
-                color: "white",
-                borderRadius: "6px",
-                padding: "2px 8px",
-                cursor: "pointer",
-              }}
-            >
-              ✓
-            </button>
-          </form>
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <strong style={{ fontSize: "0.9rem" }}>{pet.name}</strong>
-            <button
-              onClick={() => setEditingName(true)}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#3498db",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-              }}
-            >
-              Rename
-            </button>
-          </div>
-        )} */}
         <div
           style={{
             display: "flex",
@@ -149,9 +181,11 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
             alignItems: "center",
           }}
         >
-          <strong style={{ fontSize: "0.9rem" }}>{pet.name}</strong>
+          <strong style={{ fontSize: "0.95rem", letterSpacing: "0.2px" }}>
+            {pet.name}
+          </strong>
         </div>
-        <div style={{ fontSize: "0.7rem", color: "#7f8c8d", marginTop: "2px" }}>
+        <div style={{ fontSize: "0.7rem", color: inkSoft, marginTop: "2px" }}>
           Mood:{" "}
           <span style={{ fontWeight: 600 }}>{pet.mood.toUpperCase()}</span>
           {" · "}
@@ -168,8 +202,9 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
           <div
             style={{
               padding: "6px 8px 4px",
-              fontSize: "0.7rem",
-              color: "#95a5a6",
+              fontSize: "0.68rem",
+              letterSpacing: "0.5px",
+              color: inkSoft,
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
@@ -182,51 +217,58 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                fontSize: "0.75rem",
-                color: "#bdc3c7",
+                color: inkSoft,
+                padding: 2,
+                display: "flex",
               }}
             >
-              ✕
+              <TwigCrossIcon />
             </button>
           </div>
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
-              gap: "4px",
+              gap: "5px",
               padding: "2px 0",
             }}
           >
-            {FOOD_ITEMS.map((food) => (
-              <button
-                key={food.label}
-                onClick={() => handleFeed(food)}
-                style={{
-                  background: "rgba(0,0,0,0.03)",
-                  border: "1px solid rgba(0,0,0,0.06)",
-                  borderRadius: "10px",
-                  padding: "6px 4px",
-                  cursor: "pointer",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "2px",
-                  fontFamily: "inherit",
-                  transition: "background 0.15s",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "rgba(0,0,0,0.08)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "rgba(0,0,0,0.03)")
-                }
-              >
-                <span style={{ fontSize: "1.4rem" }}>{food.emoji}</span>
-                <span style={{ fontSize: "0.65rem", color: "#7f8c8d" }}>
-                  {food.label}
-                </span>
-              </button>
-            ))}
+            {FOOD_ITEMS.map((food) => {
+              const Icon = food.icon;
+              return (
+                <button
+                  key={food.label}
+                  onClick={() => handleFeed(food)}
+                  style={{
+                    background: candlelightSoft,
+                    border: `1px solid ${inkFaint}`,
+                    borderRadius: "10px",
+                    padding: "8px 4px",
+                    cursor: "pointer",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontFamily: "inherit",
+                    color: ink,
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = candlelight)
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = candlelightSoft)
+                  }
+                >
+                  <span style={{ display: "flex" }}>
+                    <Icon />
+                  </span>
+                  <span style={{ fontSize: "0.68rem", color: inkSoft }}>
+                    {food.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -242,80 +284,53 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
             <button
               style={menuItemStyle}
               onClick={() => handleInteract("wake")}
+              onMouseEnter={onEnterHover}
+              onMouseLeave={onLeaveHover}
             >
-              ☀️ Wake Up
+              <SunIcon /> Wake Up
             </button>
           ) : (
             <>
               <button
                 style={menuItemStyle}
                 onClick={() => handleInteract("sleep")}
+                onMouseEnter={onEnterHover}
+                onMouseLeave={onLeaveHover}
               >
-                🌙 Put to Sleep
+                <MoonIcon /> Put to Sleep
               </button>
               <button
                 style={menuItemStyle}
                 onClick={() => handleInteract("play")}
+                onMouseEnter={onEnterHover}
+                onMouseLeave={onLeaveHover}
               >
-                🎾 Play
+                <YarnIcon /> Play
               </button>
               <button
                 style={menuItemStyle}
                 onClick={() => setShowFoodPicker(true)}
+                onMouseEnter={onEnterHover}
+                onMouseLeave={onLeaveHover}
               >
-                🍖 Feed
+                <BowlIcon /> Feed
                 <span
                   style={{
                     marginLeft: "auto",
-                    fontSize: "0.7rem",
-                    color: "#bdc3c7",
+                    color: inkSoft,
+                    display: "flex",
                   }}
                 >
-                  ▶
+                  <LeafArrowIcon />
                 </span>
               </button>
-              {/*<button
-                style={menuItemStyle}
-                onClick={() => handleInteract("think")}
-              >
-                💡 Meditate
-              </button>*/}
             </>
           )}
 
-          {/* Change companion (species swap) disabled */}
-          {/*
           <div
             style={{
               margin: "4px 0",
-              borderBottom: "1px solid rgba(0,0,0,0.06)",
-            }}
-          />
-          <div
-            style={{ fontSize: "0.7rem", color: "#95a5a6", padding: "2px 8px" }}
-          >
-            CHANGE COMPANION
-          </div>
-          {Object.entries(SPECIES_CONFIGS).map(([key, config]) => (
-            <button
-              key={key}
-              style={{
-                ...menuItemStyle,
-                fontWeight: pet.species === key ? 700 : 400,
-                background:
-                  pet.species === key ? "rgba(0,0,0,0.04)" : "transparent",
-              }}
-              onClick={() => handleSpeciesChange(key)}
-            >
-              {(config as any).displayName}
-            </button>
-          ))}
-          */}
-
-          <div
-            style={{
-              margin: "4px 0",
-              borderBottom: "1px solid rgba(0,0,0,0.06)",
+              borderBottom: `1px solid ${inkFaint}`,
             }}
           />
           <button
@@ -324,14 +339,22 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
               window.electronAPI?.createSettingsWindow();
               onClose();
             }}
+            onMouseEnter={onEnterHover}
+            onMouseLeave={onLeaveHover}
           >
-            ⚙️ Settings
+            <GearIcon /> Settings
           </button>
           <button
-            style={{ ...menuItemStyle, color: "#e74c3c" }}
+            style={{ ...menuItemStyle, color: rust }}
             onClick={() => window.electronAPI?.quit()}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(168,90,65,0.10)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+            }}
           >
-            👋 Quit App
+            <DoorIcon /> Quit App
           </button>
         </div>
       )}
@@ -340,7 +363,7 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({
 };
 
 const menuItemStyle: React.CSSProperties = {
-  background: "none",
+  background: "transparent",
   border: "none",
   textAlign: "left",
   padding: "6px 8px",
@@ -352,5 +375,6 @@ const menuItemStyle: React.CSSProperties = {
   color: "inherit",
   display: "flex",
   alignItems: "center",
+  gap: "8px",
   transition: "background 0.2s",
 };

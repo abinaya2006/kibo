@@ -105,14 +105,13 @@ export const MessageList: React.FC<MessageListProps> = ({
                     flexDirection: isUser ? 'row-reverse' : 'row',
                   }}
                 >
+
                   <div
                     style={{
                       background: isUser ? '#3498db' : '#2d2d3d',
                       color: '#ffffff',
                       padding: '10px 14px',
-                      borderRadius: isUser
-                        ? '16px 16px 2px 16px'
-                        : '16px 16px 16px 2px',
+                      borderRadius: isUser ? '16px 16px 2px 16px' : '16px 16px 16px 2px',
                       fontSize: '0.85rem',
                       lineHeight: '1.4',
                       whiteSpace: 'pre-wrap',
@@ -121,6 +120,9 @@ export const MessageList: React.FC<MessageListProps> = ({
                       minWidth: 0,
                       boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
                       fontFamily: "'Inter', sans-serif",
+                      userSelect: 'text',        // ← add
+                      WebkitUserSelect: 'text',  // ← add
+                      cursor: 'text',            // ← add
                     }}
                   >
                     {msg.content}

@@ -3,7 +3,6 @@ import { usePetStore } from "../../state/usePetStore";
 import { DatabaseService } from "../../services/DatabaseService";
 import { chatControllerSingleton } from "../../controllers/ChatController";
 import { MessageList, stripEmoji } from "./MessageList";
-import { VoiceInput } from "./VoiceInput";
 import { VoiceManager } from "../../services/VoiceManager";
 import type { DatabaseMessage } from "../../models/types";
 
@@ -15,8 +14,6 @@ export const ChatWindow: React.FC = () => {
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [speakingId, setSpeakingId] = useState<string | null>(null);
 
@@ -96,31 +93,6 @@ export const ChatWindow: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendQuery(inputText);
-  };
-
-  const handleToggleRecording = async () => {
-    if (recording) {
-      setRecording(false);
-      setTranscribing(true);
-      try {
-        const text = await chatControllerSingleton.stopVoiceRecording();
-        setTranscribing(false);
-        if (text.trim()) {
-          setInputText(text);
-          sendQuery(text);
-        }
-      } catch (err: any) {
-        setTranscribing(false);
-        alert(err.message || "Failed processing recording.");
-      }
-    } else {
-      try {
-        await chatControllerSingleton.startVoiceRecording();
-        setRecording(true);
-      } catch (err: any) {
-        alert(err.message || "Could not access microphone.");
-      }
-    }
   };
 
   const handleClearChat = async () => {
@@ -424,7 +396,7 @@ export const ChatWindow: React.FC = () => {
         )}
       </div>
 
-      {/* Input bar — speaker button removed; reading aloud now happens per-message */}
+      {/* Input bar — voice input removed, text-only now */}
       <form
         onSubmit={handleSubmit}
         style={{
@@ -436,17 +408,12 @@ export const ChatWindow: React.FC = () => {
           alignItems: "center",
         }}
       >
-        <VoiceInput
-          isRecording={recording}
-          isTranscribing={transcribing}
-          onToggleRecording={handleToggleRecording}
-        />
         <input
           type="text"
           value={inputText}
-          disabled={loading || recording}
+          disabled={loading}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder={recording ? "Speak now..." : "Ask companion..."}
+          placeholder="Ask companion..."
           style={{
             flex: 1,
             minWidth: 0,
@@ -461,7 +428,7 @@ export const ChatWindow: React.FC = () => {
         />
         <button
           type="submit"
-          disabled={loading || !inputText.trim() || recording}
+          disabled={loading || !inputText.trim()}
           style={{
             background:
               loading || !inputText.trim()

@@ -128,7 +128,7 @@ export const SpeechBubble: React.FC<SpeechBubbleProps> = ({
                   disabled={pageIndex === 0}
                   aria-label="Previous page"
                 >
-                  ‹
+                  ◀
                 </button>
 
                 <div className="speech-bubble-dots">
@@ -146,7 +146,7 @@ export const SpeechBubble: React.FC<SpeechBubbleProps> = ({
                   disabled={pageIndex === totalPages - 1}
                   aria-label="Next page"
                 >
-                  ›
+                  ▶
                 </button>
               </div>
             )}
@@ -157,3 +157,5 @@ export const SpeechBubble: React.FC<SpeechBubbleProps> = ({
     </AnimatePresence>
   );
 };
+
+export default SpeechBubble;

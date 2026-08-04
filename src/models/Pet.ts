@@ -129,7 +129,7 @@ export function createDefaultPet(overrides?: Partial<PetData>): PetData {
   const now = Date.now();
   return {
     id: crypto.randomUUID(),
-    name: "Luna",
+    name: "Kibo",
     species: "cat",
     level: 1,
     experience: 0,
