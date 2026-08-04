@@ -5,9 +5,11 @@ import { PetSprite } from "./PetSprite";
 import { SpeechBubble } from "../SpeechBubble/SpeechBubble";
 import { EmotionIndicator } from "./EmotionIndicator";
 import { PetContextMenu } from "../ContextMenu/PetContextMenu";
+import { RareEventSprite } from "./RareEventSprite";
 import { SpeechService } from "../../services/SpeechService";
 import { PET_SIZE } from "../../models/PetConfig";
 import { petControllerSingleton } from "../../controllers/PetController";
+import { rareEventController } from "../../controllers/RareEventController";
 import { useSelectionHandler } from "../../hooks/useSelectionHandler";
 import { SelectionPopup } from "../SelectionPopup/SelectionPopup";
 
@@ -51,6 +53,13 @@ export const PetRenderer: React.FC = () => {
     }, 12000);
     return () => clearInterval(interval);
   }, [isLoaded, pet.state, pet.mood]);
+
+  // Rare wander events — a butterfly, firefly, leaf, etc. every few hours
+  useEffect(() => {
+    if (!isLoaded) return;
+    rareEventController.start();
+    return () => rareEventController.stop();
+  }, [isLoaded]);
 
   // ── Drag handlers ────────────────────────────────────────────────────────
   const handlePetMouseDown = (e: React.MouseEvent) => {
@@ -172,6 +181,9 @@ export const PetRenderer: React.FC = () => {
           facing={facing}
         />
       </motion.div>
+
+      {/* Rare wander event — butterfly, firefly, leaf, etc. */}
+      <RareEventSprite />
 
       {/* Context menu backdrop + menu */}
       {contextMenu && (

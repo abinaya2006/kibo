@@ -9,6 +9,7 @@ import type {
   AIProviderConfig,
   VoiceConfig,
   PetPersonality,
+  RareEventData,
 } from "../models/types";
 import { createDefaultPet, computeMood, canTransition } from "../models/Pet";
 
@@ -31,6 +32,10 @@ interface PetStore {
   // Selection context for Ask Kibo follow-ups
   pendingSelectionContext: string | null;
   setPendingSelectionContext: (text: string | null) => void;
+
+  // Rare wander events (butterfly, firefly, etc.) — see RareEventController
+  rareEvent: RareEventData | null;
+  setRareEvent: (event: RareEventData | null) => void;
 
   // Actions
   setPet: (pet: PetData) => void;
@@ -129,6 +134,10 @@ export const usePetStore = create<PetStore>()(
     pendingSelectionContext: null,
     setPendingSelectionContext: (text) =>
       set({ pendingSelectionContext: text }),
+
+    rareEvent: null,
+    setRareEvent: (event) => set({ rareEvent: event }),
+
 
     setPet: (pet) => set({ pet }),
 

@@ -97,6 +97,25 @@ export interface CursorData {
   lastSeen: number;
 }
 
+// ─── Rare Wander Events ────────────────────────────────────────────────────
+// Occasional wandering visitors (butterfly, firefly, etc.) that Kibo chases
+// every few hours. See controllers/RareEventController.ts
+
+export type RareEventKind =
+  | "butterfly"
+  | "paperAirplane"
+  | "ladybug"
+  | "firefly"
+  | "leaf"
+  | "star";
+
+export interface RareEventData {
+  id: string;
+  kind: RareEventKind;
+  position: Vec2;
+  spawnedAt: number; // ms
+}
+
 // ─── Database Memory ──────────────────────────────────────────────────────────
 
 export interface DatabaseMessage {
