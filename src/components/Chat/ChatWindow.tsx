@@ -7,56 +7,52 @@ import { VoiceManager } from "../../services/VoiceManager";
 import type { DatabaseMessage } from "../../models/types";
 
 const SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif";
-const MONO = "'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace";
 
+const MIN_THINKING_MS = 2000;
+const THINKING_MS_PER_CHAR = 15;
+const MAX_THINKING_MS = 6000;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Flat, thin-border "Codex/Cowork" style chrome — no gradients, no heavy shadow
 const THEMES = {
   light: {
-    bg: "#fbfbfb",
-    headerBg: "#fbfbfb",
-    inputBarBg: "#fbfbfb",
-    text: "#0d0d0d",
+    bg: "#ffffff",
+    headerBg: "#ffffff",
+    inputBarBg: "#ffffff",
+    text: "#1a1a1a",
     sub: "#8a8a8a",
-    border: "rgba(0,0,0,0.08)",
-    divider: "rgba(0,0,0,0.07)",
-    inputBg: "#fff",
-    inputBorder: "rgba(0,0,0,0.15)",
-    pillBg: "rgba(0,0,0,0.05)",
-    overlayBg: "#fbfbfb",
-    accent: "#0d0d0d",
-    accentText: "#fff",
-    danger: "#d1453b",
-    userBubble: "#0d0d0d",
-    userText: "#fff",
-    aiBubble: "#f0f0f0",
-    aiText: "#0d0d0d",
+    border: "#dfe3ea",
+    divider: "#eceef1",
+    inputBg: "#f6f7f9",
+    inputBorder: "#dfe3ea",
+    pillBg: "#f2f3f5",
+    overlayBg: "#ffffff",
+    accent: "#3478f6",
+    danger: "#e74c3c",
   },
   dark: {
-    bg: "#1c1c1e",
-    headerBg: "#1c1c1e",
-    inputBarBg: "#1c1c1e",
-    text: "#f2f2f2",
-    sub: "#9a9a9a",
-    border: "rgba(255,255,255,0.08)",
-    divider: "rgba(255,255,255,0.08)",
-    inputBg: "#2a2a2d",
-    inputBorder: "rgba(255,255,255,0.14)",
-    pillBg: "rgba(255,255,255,0.06)",
-    overlayBg: "#1c1c1e",
-    accent: "#f2f2f2",
-    accentText: "#1c1c1e",
-    danger: "#e0645a",
-    userBubble: "#f2f2f2",
-    userText: "#1c1c1e",
-    aiBubble: "#2a2a2d",
-    aiText: "#f2f2f2",
+    bg: "#191a1e",
+    headerBg: "#191a1e",
+    inputBarBg: "#191a1e",
+    text: "#ececec",
+    sub: "#8f8f96",
+    border: "#2c2d33",
+    divider: "#26272c",
+    inputBg: "#232428",
+    inputBorder: "#2c2d33",
+    pillBg: "#232428",
+    overlayBg: "#191a1e",
+    accent: "#5b9dff",
+    danger: "#e74c3c",
   },
 };
-
-export type ChatTheme = typeof THEMES.light;
 
 export const ChatWindow: React.FC = () => {
   const store = usePetStore();
   const { apiConfig, voiceConfig, sessionId, pet } = store;
+  const theme = store.theme;
+  const c = THEMES[theme];
 
   const [messages, setMessages] = useState<DatabaseMessage[]>([]);
   const [inputText, setInputText] = useState("");
@@ -98,8 +94,6 @@ export const ChatWindow: React.FC = () => {
     setMessages(history);
   };
 
-  // Only fires when the speaker icon on a message bubble is clicked.
-  // Clicking the bubble that's already speaking stops playback instead of restarting it.
   const handleSpeakMessage = async (id: string, text: string) => {
     if (speakingId === id) {
       VoiceManager.stop?.();
@@ -110,7 +104,7 @@ export const ChatWindow: React.FC = () => {
     const cleaned = stripEmoji(text);
     if (!cleaned) return;
     try {
-      VoiceManager.stop?.(); // cut off any other message currently playing
+      VoiceManager.stop?.();
       setSpeakingId(id);
       await VoiceManager.speak(cleaned, voiceConfig, apiConfig.apiKey, true);
     } catch (err) {
@@ -124,8 +118,21 @@ export const ChatWindow: React.FC = () => {
     if (!textToSend.trim() || loading) return;
     setLoading(true);
     setInputText("");
+
+    const targetThinkingMs = Math.min(
+      MAX_THINKING_MS,
+      MIN_THINKING_MS + textToSend.length * THINKING_MS_PER_CHAR,
+    );
+    const startedAt = Date.now();
+
     try {
       await chatControllerSingleton.handleSendPrompt(textToSend);
+
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < targetThinkingMs) {
+        await sleep(targetThinkingMs - elapsed);
+      }
+
       await loadHistory();
     } catch (err: any) {
       alert(err.message || "API query execution failed.");
@@ -156,29 +163,31 @@ export const ChatWindow: React.FC = () => {
         top: isFullscreen ? 0 : undefined,
         left: isFullscreen ? 0 : undefined,
         zIndex: isFullscreen ? 10000 : undefined,
-        background: "#151520",
+        background: c.bg,
         display: "flex",
         flexDirection: "column",
-        borderRadius: isFullscreen ? 0 : "14px",
+        borderRadius: isFullscreen ? 0 : "10px",
         border: isFullscreen ? "none" : `1px solid ${c.border}`,
         overflow: "hidden",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+        boxShadow: isFullscreen ? "none" : "0 1px 3px rgba(0,0,0,0.08)",
         color: c.text,
         fontFamily: SANS,
-        transition: "background 0.2s, color 0.2s",
+        transition: "background 0.2s, color 0.2s, border-radius 0.15s",
       }}
       onMouseEnter={() => window.electronAPI?.setChatIgnoreMouseEvents(false)}
       onMouseLeave={() => window.electronAPI?.setChatIgnoreMouseEvents(true)}
     >
+      {/* Root sizing fix — without this #root has 0 height and the window
+          loads invisibly (matches SettingsWindow.tsx's reset) */}
       <style>{`
-        .kibo-icon-btn { background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 5px; border-radius: 6px; color: ${c.sub}; }
-        .kibo-icon-btn:hover { background: ${c.pillBg}; }
+        html, body, #root { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; }
+        *, *::before, *::after { box-sizing: border-box; }
       `}</style>
 
-      {/* Header */}
+      {/* Header — flat, thin bottom divider, no colored status dot */}
       <div
         style={{
-          padding: "12px 16px",
+          padding: "10px 14px",
           background: c.headerBg,
           borderBottom: `1px solid ${c.divider}`,
           display: "flex",
@@ -187,44 +196,66 @@ export const ChatWindow: React.FC = () => {
           flexShrink: 0,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <div
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+          <span
             style={{
-              width: "7px",
-              height: "7px",
-              borderRadius: "50%",
-              background: pet.state === "thinking" ? "#e0a52c" : "#2fa563",
+              fontWeight: 600,
+              fontSize: "0.88rem",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
-          />
-          <span style={{ fontWeight: 600, fontSize: "0.88rem" }}>{pet.name}</span>
+          >
+            {pet.name}
+          </span>
           <span
             style={{
               fontSize: "0.68rem",
               color: c.sub,
               background: c.pillBg,
-              padding: "2px 6px",
+              padding: "2px 7px",
               borderRadius: "999px",
-              fontFamily: MONO,
+              flexShrink: 0,
             }}
           >
             Lvl {pet.level}
           </span>
         </div>
-        <div style={{ display: "flex", gap: "2px" }}>
-          <button className="kibo-icon-btn" onClick={() => setIsFullscreen((v) => !v)} title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
-            <IconExpand collapsed={!isFullscreen} />
+        <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            style={{ ...headerIconBtn, color: isFullscreen ? c.accent : c.sub }}
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          >
+            <IconExpand />
           </button>
-          <button className="kibo-icon-btn" onClick={() => window.electronAPI?.createSettingsWindow()} title="Settings">
+          <button
+            onClick={() => window.electronAPI?.createSettingsWindow()}
+            style={{ ...headerIconBtn, color: showSettings ? c.accent : c.sub }}
+            title="Settings"
+          >
             <IconGear />
           </button>
-          <button className="kibo-icon-btn" onClick={() => window.electronAPI?.closeChatWindow()} title="Close Panel">
+          <button
+            onClick={() => window.electronAPI?.closeChatWindow()}
+            style={{ ...headerIconBtn, color: c.sub }}
+            title="Close Panel"
+          >
             <IconClose />
           </button>
         </div>
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, display: "flex", position: "relative", overflow: "hidden", minHeight: 0 }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          position: "relative",
+          overflow: "hidden",
+          minHeight: 0,
+        }}
+      >
         <MessageList
           messages={messages}
           onSpeak={(text) => {
@@ -243,77 +274,189 @@ export const ChatWindow: React.FC = () => {
               left: 0,
               width: "100%",
               height: "100%",
-              background: "#151522",
+              background: c.overlayBg,
               zIndex: 100,
               padding: "16px",
               overflowY: "auto",
               display: "flex",
               flexDirection: "column",
               gap: "14px",
-              fontSize: "0.82rem",
+              fontSize: "0.85rem",
               color: c.text,
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${c.divider}`, paddingBottom: "8px" }}>
-              <strong style={{ fontSize: "0.92rem" }}>Preferences</strong>
-              <button className="kibo-icon-btn" onClick={() => setShowSettings(false)}>
-                <IconClose />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                borderBottom: `1px solid ${c.divider}`,
+                paddingBottom: "8px",
+              }}
+            >
+              <strong style={{ fontSize: "1rem" }}>
+                Companion Preferences
+              </strong>
+              <button
+                onClick={() => setShowSettings(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: c.danger,
+                  cursor: "pointer",
+                  fontSize: "0.9rem",
+                }}
+              >
+                Close
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <strong style={{ fontSize: "0.8rem" }}>AI Provider</strong>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+            >
+              <strong>AI Provider</strong>
               <select
                 value={apiConfig.provider}
-                onChange={(e) => store.setApiConfig({ provider: e.target.value as any })}
-                style={{ background: c.inputBg, border: `1px solid ${c.inputBorder}`, color: c.text, padding: "6px", borderRadius: "6px" }}
+                onChange={(e) =>
+                  store.setApiConfig({ provider: e.target.value as any })
+                }
+                style={{
+                  background: c.inputBg,
+                  border: `1px solid ${c.inputBorder}`,
+                  color: c.text,
+                  padding: "6px",
+                  borderRadius: "6px",
+                }}
               >
                 <option value="gemini">Google Gemini</option>
                 <option value="groq">Groq</option>
               </select>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", borderTop: `1px solid ${c.divider}`, paddingTop: "10px" }}>
-              <strong style={{ fontSize: "0.8rem" }}>Speech Output</strong>
-              <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <input type="checkbox" checked={voiceConfig.enabled} onChange={(e) => store.setVoiceConfig({ enabled: e.target.checked })} />
-                <span>Enable Voice Output</span>
+              <label
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                  marginTop: "4px",
+                }}
+              >
+                <span>API Key</span>
+                <input
+                  type="password"
+                  value={apiConfig.apiKey}
+                  placeholder="Paste your API key here"
+                  onChange={(e) =>
+                    store.setApiConfig({ apiKey: e.target.value })
+                  }
+                  style={{
+                    background: c.inputBg,
+                    border: `1px solid ${c.inputBorder}`,
+                    color: c.text,
+                    padding: "6px",
+                    borderRadius: "6px",
+                  }}
+                />
               </label>
             </div>
 
-            <div style={{ marginTop: "auto", borderTop: `1px solid ${c.divider}`, paddingTop: "12px" }}>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                borderTop: `1px solid ${c.divider}`,
+                paddingTop: "10px",
+              }}
+            >
+              <strong>Speech Synthesizer (TTS)</strong>
+              <label
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
+                <input
+                  type="checkbox"
+                  checked={voiceConfig.enabled}
+                  onChange={(e) =>
+                    store.setVoiceConfig({ enabled: e.target.checked })
+                  }
+                />
+                <span>Enable Voice Output</span>
+              </label>
+              <select
+                value={voiceConfig.ttsProvider}
+                onChange={(e) =>
+                  store.setVoiceConfig({ ttsProvider: e.target.value as any })
+                }
+                style={{
+                  background: c.inputBg,
+                  border: `1px solid ${c.inputBorder}`,
+                  color: c.text,
+                  padding: "6px",
+                  borderRadius: "6px",
+                }}
+              >
+                <option value="edge">
+                  Edge TTS (Free Keyless Web Synthesis)
+                </option>
+                <option value="openai">
+                  OpenAI Premium TTS (Requires API Key)
+                </option>
+              </select>
+            </div>
+
+            <div
+              style={{
+                marginTop: "auto",
+                borderTop: `1px solid ${c.divider}`,
+                paddingTop: "12px",
+              }}
+            >
               <button
                 onClick={handleClearChat}
-                style={{ width: "100%", background: c.danger, border: "none", color: "#fff", padding: "8px", borderRadius: "8px", cursor: "pointer", fontWeight: 500, fontSize: "0.8rem" }}
+                style={{
+                  width: "100%",
+                  background: c.danger,
+                  border: "none",
+                  color: "white",
+                  padding: "8px",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
               >
-                Clear History
+                🧹 Clear History Memory
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Input bar — voice input removed, text-only now */}
+      {/* Input bar — flat, thin top divider, matches header */}
       <form
         onSubmit={handleSubmit}
-        style={{ padding: "10px 14px", background: c.inputBarBg, borderTop: `1px solid ${c.divider}`, display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}
+        style={{
+          padding: "10px 14px",
+          background: c.inputBarBg,
+          borderTop: `1px solid ${c.divider}`,
+          display: "flex",
+          gap: "8px",
+          alignItems: "center",
+          flexShrink: 0,
+        }}
       >
         <input
           type="text"
           value={inputText}
           disabled={loading}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="Message..."
+          placeholder="Ask companion..."
           style={{
             flex: 1,
             minWidth: 0,
             background: c.inputBg,
             border: `1px solid ${c.inputBorder}`,
-            borderRadius: "999px",
-            padding: "8px 14px",
+            borderRadius: "8px",
+            padding: "8px 12px",
             color: c.text,
-            fontSize: "0.82rem",
-            fontFamily: SANS,
+            fontSize: "0.85rem",
             outline: "none",
           }}
         />
@@ -322,41 +465,69 @@ export const ChatWindow: React.FC = () => {
           disabled={loading || !inputText.trim()}
           style={{
             background: loading || !inputText.trim() ? c.pillBg : c.accent,
-            color: loading || !inputText.trim() ? c.sub : c.accentText,
+            color: loading || !inputText.trim() ? c.sub : "#fff",
             border: "none",
-            borderRadius: "50%",
-            width: "30px",
-            height: "30px",
-            cursor: loading || !inputText.trim() ? "default" : "pointer",
+            borderRadius: "8px",
+            width: "34px",
+            height: "34px",
+            cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
           }}
         >
-          <IconArrow />
+          <IconSend />
         </button>
       </form>
     </div>
   );
 };
 
-const IconClose = () => (
-  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
-);
-const IconGear = () => (
-  <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+const headerIconBtn: React.CSSProperties = {
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "24px",
+  height: "24px",
+  borderRadius: "6px",
+  padding: 0,
+};
+
+const iconProps = {
+  width: 14,
+  height: 14,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
+
+const IconExpand = () => (
+  <svg {...iconProps}>
+    <path d="M8 3H4v4M16 3h4v4M8 21H4v-4M16 21h4v-4" />
   </svg>
 );
-const IconExpand = ({ collapsed }: { collapsed: boolean }) =>
-  collapsed ? (
-    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m11-5v3a2 2 0 0 1-2 2h-3" /></svg>
-  ) : (
-    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3m8-5h3a2 2 0 0 1 2 2v3" /></svg>
-  );
-const IconArrow = () => (
-  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+const IconGear = () => (
+  <svg {...iconProps}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 3.5v2.3M12 18.2v2.3M20.5 12h-2.3M5.8 12H3.5M17.7 6.3l-1.6 1.6M7.9 16.1l-1.6 1.6M17.7 17.7l-1.6-1.6M7.9 7.9 6.3 6.3" />
+  </svg>
+);
+const IconClose = () => (
+  <svg {...iconProps} width={13} height={13}>
+    <path d="M18 6 6 18M6 6l12 12" />
+  </svg>
+);
+const IconSend = () => (
+  <svg {...iconProps} width={15} height={15} stroke="none" fill="currentColor">
+    <path d="M3 11l18-8-8 18-2-8-8-2z" />
+  </svg>
 );
 
 export default ChatWindow;

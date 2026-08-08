@@ -94,6 +94,12 @@ const FOOD_ITEMS = [
   { icon: MilkIcon, label: "Milk", hunger: 10, happiness: 12 },
 ];
 
+const ChatIcon = () => (
+  <svg {...iconProps}>
+    <path d="M4 5.5h16v11H9.5L5 20.5V16.5H4z" />
+  </svg>
+);
+
 export const PetContextMenu: React.FC<PetContextMenuProps> = ({ x, y, onClose }) => {
   const store = usePetStore();
   const { pet } = store;
@@ -211,6 +217,18 @@ export const PetContextMenu: React.FC<PetContextMenuProps> = ({ x, y, onClose })
           <div style={{ margin: "10px 0", borderBottom: `1px solid ${divider}` }} />
 
           <div style={{ display: "flex", gap: "6px" }}>
+            <button
+              style={{ ...tileStyle, flex: 1 }}
+              onClick={() => {
+                window.electronAPI?.createChatWindow(null);
+                onClose();
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = itemHoverBg)}
+              onMouseLeave={(e) => (e.currentTarget.style.background = itemBg)}
+            >
+              <ChatIcon />
+              <span style={tileLabelStyle}>Chat</span>
+            </button>
             <button
               style={{ ...tileStyle, flex: 1 }}
               onClick={() => {
