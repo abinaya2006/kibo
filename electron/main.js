@@ -20,7 +20,7 @@ import { bootstrapSkills,skillRegistry } from "./bootstrap.ts";
 
 let store = null;
 let tray = null;
-let skillRegistry = null;
+// let skillRegistry = null;
 
 async function initStore() {
   try {
