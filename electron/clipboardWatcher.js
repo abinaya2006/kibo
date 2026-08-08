@@ -18,6 +18,7 @@ export function unregisterShortcut() {
 export function captureHighlightedText() {
   const activeWindow = getPetWindow();
   if (!activeWindow) return;
+
   if (process.platform === "win32") {
     // Save what's currently on the clipboard so we can restore it
     previousClipboard = clipboard.readText();

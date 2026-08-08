@@ -16,7 +16,7 @@ import {
   clearMessages,
   closeDatabase,
 } from "./database/db.cjs";
-import { bootstrapSkills,skillRegistry } from "./bootstrap.ts";
+import { bootstrapSkills, skillRegistry } from "./bootstrap.ts";
 
 let store = null;
 let tray = null;
@@ -204,7 +204,6 @@ app.whenReady().then(async () => {
     if (!getPetWindow()) createPetWindow();
   });
 });
-
 
 app.on("will-quit", () => {
   unregisterShortcut();

@@ -57,8 +57,6 @@ export type ChatTheme = typeof THEMES.light;
 export const ChatWindow: React.FC = () => {
   const store = usePetStore();
   const { apiConfig, voiceConfig, sessionId, pet } = store;
-  const theme = store.theme;
-  const c = THEMES[theme];
 
   const [messages, setMessages] = useState<DatabaseMessage[]>([]);
   const [inputText, setInputText] = useState("");
@@ -100,6 +98,8 @@ export const ChatWindow: React.FC = () => {
     setMessages(history);
   };
 
+  // Only fires when the speaker icon on a message bubble is clicked.
+  // Clicking the bubble that's already speaking stops playback instead of restarting it.
   const handleSpeakMessage = async (id: string, text: string) => {
     if (speakingId === id) {
       VoiceManager.stop?.();
@@ -110,7 +110,7 @@ export const ChatWindow: React.FC = () => {
     const cleaned = stripEmoji(text);
     if (!cleaned) return;
     try {
-      VoiceManager.stop?.();
+      VoiceManager.stop?.(); // cut off any other message currently playing
       setSpeakingId(id);
       await VoiceManager.speak(cleaned, voiceConfig, apiConfig.apiKey, true);
     } catch (err) {
@@ -156,7 +156,7 @@ export const ChatWindow: React.FC = () => {
         top: isFullscreen ? 0 : undefined,
         left: isFullscreen ? 0 : undefined,
         zIndex: isFullscreen ? 10000 : undefined,
-        background: c.bg,
+        background: "#151520",
         display: "flex",
         flexDirection: "column",
         borderRadius: isFullscreen ? 0 : "14px",
@@ -243,7 +243,7 @@ export const ChatWindow: React.FC = () => {
               left: 0,
               width: "100%",
               height: "100%",
-              background: c.overlayBg,
+              background: "#151522",
               zIndex: 100,
               padding: "16px",
               overflowY: "auto",
@@ -293,7 +293,7 @@ export const ChatWindow: React.FC = () => {
         )}
       </div>
 
-      {/* Input bar */}
+      {/* Input bar — voice input removed, text-only now */}
       <form
         onSubmit={handleSubmit}
         style={{ padding: "10px 14px", background: c.inputBarBg, borderTop: `1px solid ${c.divider}`, display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}

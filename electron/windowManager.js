@@ -99,7 +99,7 @@ export function createChatWindow() {
     },
   });
 
-  chatWindow.setAlwaysOnTop(true, "screen-saver");
+  // chatWindow.setAlwaysOnTop(true, "screen-saver");
   chatWindow.setIgnoreMouseEvents(false);
 
   const isDev =
