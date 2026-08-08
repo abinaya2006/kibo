@@ -4,7 +4,8 @@ import { DatabaseService } from "../../services/DatabaseService";
 import { chatControllerSingleton } from "../../controllers/ChatController";
 import { MessageList, stripEmoji } from "./MessageList";
 import { VoiceManager } from "../../services/VoiceManager";
-import type { DatabaseMessage } from "../../models/types";
+import { EventBus } from "../../services/EventBus";
+import type { DatabaseMessage, SkillConfirmRequest } from "../../models/types";
 
 const SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif";
 
@@ -14,7 +15,6 @@ const MAX_THINKING_MS = 6000;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Flat, thin-border "Codex/Cowork" style chrome — no gradients, no heavy shadow
 const THEMES = {
   light: {
     bg: "#ffffff",
@@ -74,6 +74,35 @@ export const ChatWindow: React.FC = () => {
       if (!text?.trim()) return;
       usePetStore.getState().setPendingSelectionContext(text);
       injectContextMessage(text);
+    });
+    return () => unsub?.();
+  }, []);
+
+  // Skill results and background confirmation replies land in the DB
+  // outside of sendQuery()'s own await chain — this is what picks them up.
+  useEffect(() => {
+    const unsub = EventBus.on?.("chat:updated", () => loadHistory());
+    return () => unsub?.();
+  }, []);
+
+  // Main process asks the chat window to confirm a medium/high-risk skill
+  // before it runs. Surface it as a message and arm pendingConfirmation so
+  // the next thing the user types is read as yes/no, not a new request.
+  useEffect(() => {
+    const unsub = window.electronAPI?.onSkillConfirmRequest?.((payload: SkillConfirmRequest) => {
+      usePetStore.getState().setPendingConfirmation({
+        requestId: payload.requestId,
+        skillId: payload.skillId,
+        title: payload.title,
+      });
+      const previewLine = payload.preview?.message ? `\n\n${payload.preview.message}` : "";
+      DatabaseService.addMessage({
+        id: crypto.randomUUID(),
+        sessionId: usePetStore.getState().sessionId,
+        role: "assistant",
+        content: `Before I do "${payload.title}" (risk: ${payload.risk}):${previewLine}\n\nShould I go ahead? (yes/no)`,
+        timestamp: Date.now(),
+      }).then(loadHistory);
     });
     return () => unsub?.();
   }, []);
@@ -177,14 +206,11 @@ export const ChatWindow: React.FC = () => {
       onMouseEnter={() => window.electronAPI?.setChatIgnoreMouseEvents(false)}
       onMouseLeave={() => window.electronAPI?.setChatIgnoreMouseEvents(true)}
     >
-      {/* Root sizing fix — without this #root has 0 height and the window
-          loads invisibly (matches SettingsWindow.tsx's reset) */}
       <style>{`
         html, body, #root { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; }
         *, *::before, *::after { box-sizing: border-box; }
       `}</style>
 
-      {/* Header — flat, thin bottom divider, no colored status dot */}
       <div
         style={{
           padding: "10px 14px",
@@ -246,7 +272,6 @@ export const ChatWindow: React.FC = () => {
         </div>
       </div>
 
-      {/* Body */}
       <div
         style={{
           flex: 1,
@@ -429,7 +454,6 @@ export const ChatWindow: React.FC = () => {
         )}
       </div>
 
-      {/* Input bar — flat, thin top divider, matches header */}
       <form
         onSubmit={handleSubmit}
         style={{

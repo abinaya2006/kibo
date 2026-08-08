@@ -1,31 +1,83 @@
+// electron/security/PermissionManager.ts
+import { randomUUID } from "crypto";
 import type { Skill, SkillMetadata } from "../models/types.ts";
+import type { BrowserWindow } from "electron";
 
-/**
- * Step 1 stub. Real confirmation UI (chat prompt / dialog) gets wired
- * up in Step 5 once the planner + chat layer exist. For now this just
- * centralizes the decision logic so nothing else has to know how
- * confirmation is actually implemented later.
- */
+interface PendingConfirmation {
+  resolve: (approved: boolean) => void;
+  timer: ReturnType<typeof setTimeout>;
+}
+
+interface ChatWindowBridge {
+  getChatWindow: () => BrowserWindow | null;
+  /** Opens (or focuses) the chat window and resolves once it exists. Does NOT guarantee loaded. */
+  openChatWindow: () => BrowserWindow;
+  /** Sends a channel/payload once the window's finished loading, like windowManager's sendContextToChat. */
+  sendToChat: (win: BrowserWindow, channel: string, payload: unknown) => void;
+}
+
+const CONFIRMATION_TIMEOUT_MS = 5 * 60 * 1000; // no answer -> fail closed
+
 export class PermissionManager {
-  /** Whether this skill call must pause for explicit user confirmation. */
+  private bridge: ChatWindowBridge | null = null;
+  private pending = new Map<string, PendingConfirmation>();
+
+  /** Call once from main.ts at startup, wiring in windowManager's functions. */
+  init(bridge: ChatWindowBridge) {
+    this.bridge = bridge;
+  }
+
   requiresConfirmation(metadata: SkillMetadata): boolean {
     return metadata.requiresConfirmation || metadata.risk !== "low";
   }
 
-  /**
-   * Placeholder confirmation gate. In Step 1 this always resolves true
-   * (auto-approve) so the pipeline can be tested end-to-end without a UI.
-   * Step 5 replaces this with a real prompt that can resolve false.
-   */
-  async confirm<TArgs>(skill: Skill<TArgs>, args: TArgs): Promise<boolean> {
-    if (this.requiresConfirmation(skill.metadata)) {
-      // eslint-disable-next-line no-console
-      console.log(
-        `[PermissionManager] "${skill.metadata.title}" requires confirmation ` +
-          `(risk: ${skill.metadata.risk}). Auto-approving in Step 1 stub.`,
-        args,
-      );
+  async confirm<TArgs>(skill: Skill<TArgs, unknown>, args: TArgs): Promise<boolean> {
+    if (!this.requiresConfirmation(skill.metadata)) return true;
+
+    if (!this.bridge) {
+      console.error("[PermissionManager] Not initialized — denying by default.");
+      return false;
     }
+
+    let preview: unknown = null;
+    if (skill.metadata.supportsDryRun && skill.dryRun) {
+      try {
+        preview = await skill.dryRun(args);
+      } catch (err) {
+        console.error(`[PermissionManager] dryRun failed for "${skill.metadata.id}":`, err);
+        return false; // can't preview -> never execute blind
+      }
+    }
+
+    const win = this.bridge.getChatWindow() ?? this.bridge.openChatWindow();
+    const requestId = randomUUID();
+
+    return new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => {
+        this.pending.delete(requestId);
+        resolve(false);
+      }, CONFIRMATION_TIMEOUT_MS);
+
+      this.pending.set(requestId, { resolve, timer });
+
+      this.bridge!.sendToChat(win, "skill:confirm-request", {
+        requestId,
+        skillId: skill.metadata.id,
+        title: skill.metadata.title,
+        risk: skill.metadata.risk,
+        args,
+        preview,
+      });
+    });
+  }
+
+  /** Called from ipcMain "skill:confirm-response". */
+  resolveConfirmation(requestId: string, approved: boolean): boolean {
+    const entry = this.pending.get(requestId);
+    if (!entry) return false;
+    clearTimeout(entry.timer);
+    this.pending.delete(requestId);
+    entry.resolve(approved);
     return true;
   }
 }

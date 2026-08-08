@@ -99,14 +99,12 @@ export function createChatWindow() {
     },
   });
 
-  // chatWindow.setAlwaysOnTop(true, "screen-saver");
   chatWindow.setIgnoreMouseEvents(false);
 
   const isDev =
     process.env.NODE_ENV === "development" ||
     !process.env.PORTABLE_EXECUTABLE_DIR;
   if (isDev) {
-    // Append routing hash or search param to distinguish windows in React
     loadWithRetry(chatWindow, `${DEV_SERVER_URL}?window=chat`, "CHAT WINDOW");
   } else {
     chatWindow.loadFile(path.join(__dirname, "../dist/index.html"), {
@@ -146,7 +144,7 @@ export function createSettingsWindow() {
     height,
     minWidth: 540,
     minHeight: 500,
-    useContentSize: true,   // width/height apply to the content area, not OS chrome
+    useContentSize: true,
     x: Math.round((screenWidth - width) / 2),
     y: Math.round((screenHeight - height) / 2),
     frame: false,
@@ -203,26 +201,18 @@ export function getChatWindow() {
   return chatWindow;
 }
 
-export function sendContextToChat(win, text) {
-  console.log(
-    "[WINDOW] sendContextToChat called, text:",
-    text,
-    "isLoading:",
-    win.webContents.isLoading(),
-  );
-  if (!text) return;
+// ── Generic "send once loaded" helper, used by any confirm/context push ──────
+export function sendToChat(win, channel, payload) {
   if (win.webContents.isLoading()) {
     win.webContents.once("did-finish-load", () => {
-      console.log("[WINDOW] did-finish-load fired, sending after 200ms");
-      setTimeout(() => {
-        console.log("[WINDOW] sending chat:receive-context now");
-        win.webContents.send("chat:receive-context", text);
-      }, 200);
+      setTimeout(() => win.webContents.send(channel, payload), 200);
     });
   } else {
-    setTimeout(() => {
-      console.log("[WINDOW] already loaded, sending chat:receive-context now");
-      win.webContents.send("chat:receive-context", text);
-    }, 200);
+    setTimeout(() => win.webContents.send(channel, payload), 200);
   }
+}
+
+export function sendContextToChat(win, text) {
+  if (!text) return;
+  sendToChat(win, "chat:receive-context", text);
 }

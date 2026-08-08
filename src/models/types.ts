@@ -1,4 +1,15 @@
+import type { SkillMetadata, SkillResult, DryRunResult, SkillRisk } from "../../electron/models/types";
+
 // ─── FSM States ──────────────────────────────────────────────────────────────
+
+export interface SkillConfirmRequest {
+  requestId: string;
+  skillId: string;
+  title: string;
+  risk: SkillRisk;
+  args: unknown;
+  preview: DryRunResult | null;
+}
 
 export type PetState =
   | "idle"
@@ -196,6 +207,12 @@ export interface ElectronAPI {
     callback: (...args: unknown[]) => void,
   ) => () => void;
   removeAllListeners: (channel: string) => void;
+  executeSkill: (skillId: string, args: unknown) => Promise<SkillResult>; // was missing from the type despite existing in preload.cjs since Step 2
+  listSkills: () => Promise<SkillMetadata[]>;
+  dryRunSkill: (skillId: string, args: unknown) => Promise<DryRunResult>;
+  onSkillConfirmRequest: (callback: (payload: SkillConfirmRequest) => void) => () => void;
+  respondToSkillConfirm: (requestId: string, approved: boolean) => Promise<boolean>;
+  onChatContext: (callback: (text: string) => void) => () => void; // also already used in ChatWindow.tsx and defined in preloa
 }
 
 declare global {

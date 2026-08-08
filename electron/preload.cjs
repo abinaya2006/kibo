@@ -49,4 +49,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("chat:receive-context", sub);
     return () => ipcRenderer.removeListener("chat:receive-context", sub);
   },
+
+  listSkills: () => ipcRenderer.invoke("skill:list"),
+  dryRunSkill: (skillId, args) => ipcRenderer.invoke("skill:dry-run", skillId, args),
+  onSkillConfirmRequest: (callback) => {
+    const sub = (_event, payload) => callback(payload);
+    ipcRenderer.on("skill:confirm-request", sub);
+    return () => ipcRenderer.removeListener("skill:confirm-request", sub);
+  },
+  respondToSkillConfirm: (requestId, approved) =>
+    ipcRenderer.invoke("skill:confirm-response", requestId, approved),
 });

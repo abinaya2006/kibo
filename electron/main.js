@@ -6,6 +6,7 @@ import {
   getPetWindow,
   getChatWindow,
   getSettingsWindow,
+  sendToChat,
   sendContextToChat,
 } from "./windowManager.js";
 import { registerShortcut, unregisterShortcut } from "./clipboardWatcher.js";
@@ -16,6 +17,7 @@ import {
   clearMessages,
   closeDatabase,
 } from "./database/db.cjs";
+import { permissionManager } from "./security/PermissionManager.ts";
 import { bootstrapSkills, skillRegistry } from "./bootstrap.ts";
 
 let store = null;
@@ -171,29 +173,56 @@ function registerIpcHandlers() {
   });
 
   // ── Skills (Kibo Step 2) ─────────────────────────────────────────────────────
-  ipcMain.handle("skill:execute", async (_event, skillId, args) => {
-    if (!skillRegistry) {
-      return { success: false, error: "Skill registry not initialized" };
-    }
-    try {
-      return await skillRegistry.execute(skillId, args);
-    } catch (err) {
-      // SkillRegistry.execute should already return a structured
-      // SkillResult on failure — this only catches what escapes it
-      // (e.g. an unrecognized skillId thrown before that point).
-      return {
-        success: false,
-        error: err instanceof Error ? err.message : String(err),
-      };
-    }
-  });
-}
+  // ── Skills (Kibo Step 2) ─────────────────────────────────────────────────────
+    ipcMain.handle("skill:execute", async (_event, skillId, args) => {
+      if (!skillRegistry) {
+        return { success: false, error: "Skill registry not initialized" };
+      }
+      try {
+        return await skillRegistry.execute(skillId, args);
+      } catch (err) {
+        return {
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+        };
+      }
+    });
+
+    ipcMain.handle("skill:list", () => {
+      if (!skillRegistry) return [];
+      return skillRegistry.listSkills();
+    });
+
+    ipcMain.handle("skill:dry-run", async (_event, skillId, args) => {
+      if (!skillRegistry) {
+        return { message: "Skill registry not initialized" };
+      }
+      try {
+        return await skillRegistry.dryRun(skillId, args);
+      } catch (err) {
+        return { message: err instanceof Error ? err.message : String(err) };
+      }
+    });
+
+    ipcMain.handle("skill:confirm-response", (_event, requestId, approved) => {
+      return permissionManager.resolveConfirmation(requestId, approved);
+    });
+  }
+
+
+
 
 app.whenReady().then(async () => {
   await initStore();
   initDatabase(app);
   registerIpcHandlers();
   bootstrapSkills();
+
+  permissionManager.init({
+      getChatWindow,
+      openChatWindow: () => getChatWindow() ?? createChatWindow(),
+      sendToChat,
+    });
 
   // ── TEMP: Step 3 verification — delete this block once confirmed ──
   // skillRegistry

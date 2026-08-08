@@ -66,7 +66,11 @@ interface PetStore {
 
   touchInteraction: () => void;
   resetPet: () => void;
+
+  pendingConfirmation: { requestId: string; skillId: string; title: string } | null;
+  setPendingConfirmation: (val: PetStore["pendingConfirmation"]) => void;
 }
+
 
 // ─── Local Storage Loader Helpers ────────────────────────────────────────────────
 
