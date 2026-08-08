@@ -237,6 +237,59 @@ app.whenReady().then(async () => {
   //   .then((result) => console.log("[TEST] search:", result))
   //   .catch((err) => console.error("[TEST] search failed:", err));
 
+  //-------------------------------------------------------------------------
+  //clipboard
+  // skillRegistry
+  //   .execute("clipboard.copyText", { text: "hello from kibo step 4" })
+  //   .then((result) => console.log("[TEST] copyText:", result))
+  //   .catch((err) => console.error("[TEST] copyText failed:", err));
+
+  //system info
+  // skillRegistry
+  //   .execute("system.info", { metric: "battery" })
+  //   .then((result) => console.log("[TEST] systemInfo battery:", result))
+  //   .catch((err) => console.error("[TEST] systemInfo failed:", err));
+  //
+
+  //notification
+  // skillRegistry
+  //   .execute("utilities.notify", { title: "Kibo", body: "Step 4 test notification" })
+  //   .then((result) => console.log("[TEST] notify:", result))
+  //   .catch((err) => console.error("[TEST] notify failed:", err));
+  //
+
+  //screenshot
+  // skillRegistry
+  //   .execute("utilities.screenshot", { savePath: "kibo-screenshot.png" })
+  //   .then((result) => console.log("[TEST] screenshot:", result))
+  //   .catch((err) => console.error("[TEST] screenshot failed:", err));
+
+  //open url
+  // skillRegistry
+  //   .execute("utilities.openUrl", { url: "https://anthropic.com" })
+  //   .then((result) => console.log("[TEST] openUrl:", result))
+  //   .catch((err) => console.error("[TEST] openUrl failed:", err));
+
+  //list installed apps
+  // skillRegistry
+  //   .execute("apps.listInstalled", {})
+  //   .then((result) => console.log("[TEST] listInstalled:", result.data?.slice(0, 5), "total:", result.data?.length))
+  //   .catch((err) => console.error("[TEST] listInstalled failed:", err));
+  //
+
+  //timer
+  // skillRegistry
+  //   .execute("utilities.timer", { seconds: 3, label: "quick test" })
+  //   .then((result) => console.log("[TEST] timer:", result))
+  //   .catch((err) => console.error("[TEST] timer failed:", err));
+  //
+
+  //open app
+  // skillRegistry
+  //   .execute("apps.open", { appPath: "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Accessories\\Notepad.lnk" })
+  //   .then((result) => console.log("[TEST] openApp:", result))
+  //   .catch((err) => console.error("[TEST] openApp failed:", err));
+
   createPetWindow();
   initTray();
   registerShortcut();
