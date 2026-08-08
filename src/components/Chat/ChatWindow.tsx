@@ -6,46 +6,9 @@ import { MessageList, stripEmoji } from "./MessageList";
 import { VoiceManager } from "../../services/VoiceManager";
 import type { DatabaseMessage } from "../../models/types";
 
-const SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif";
-
-const THEMES = {
-  light: {
-    bg: "#fbfbfb",
-    headerBg: "#f5f5f5",
-    inputBarBg: "#f5f5f5",
-    text: "#0d0d0d",
-    sub: "#8a8a8a",
-    border: "rgba(0,0,0,0.08)",
-    divider: "rgba(0,0,0,0.07)",
-    inputBg: "#fff",
-    inputBorder: "rgba(0,0,0,0.15)",
-    pillBg: "rgba(0,0,0,0.05)",
-    overlayBg: "#fbfbfb",
-    accent: "#22a55e",
-    danger: "#e74c3c",
-  },
-  dark: {
-    bg: "#151520",
-    headerBg: "#1e1e2d",
-    inputBarBg: "#1c1c28",
-    text: "#ffffff",
-    sub: "#95a5a6",
-    border: "rgba(255,255,255,0.08)",
-    divider: "rgba(255,255,255,0.06)",
-    inputBg: "rgba(255,255,255,0.04)",
-    inputBorder: "rgba(255,255,255,0.1)",
-    pillBg: "rgba(255,255,255,0.05)",
-    overlayBg: "#151522",
-    accent: "#3498db",
-    danger: "#e74c3c",
-  },
-};
-
 export const ChatWindow: React.FC = () => {
   const store = usePetStore();
   const { apiConfig, voiceConfig, sessionId, pet } = store;
-  const theme = store.theme;
-  const c = THEMES[theme];
 
   const [messages, setMessages] = useState<DatabaseMessage[]>([]);
   const [inputText, setInputText] = useState("");
@@ -63,6 +26,9 @@ export const ChatWindow: React.FC = () => {
   }, []);
 
   // ── Single listener for highlighted-text context ────────────────────────────
+  // Handles both cases: window already open when text is selected, and the
+  // race where createChatWindow() fires before this listener registers
+  // (main process retries delivery via sendContextToChat's did-finish-load hook).
   useEffect(() => {
     const unsub = window.electronAPI?.onChatContext?.((text: string) => {
       if (!text?.trim()) return;
@@ -88,6 +54,8 @@ export const ChatWindow: React.FC = () => {
     setMessages(history);
   };
 
+  // Only fires when the speaker icon on a message bubble is clicked.
+  // Clicking the bubble that's already speaking stops playback instead of restarting it.
   const handleSpeakMessage = async (id: string, text: string) => {
     if (speakingId === id) {
       VoiceManager.stop?.();
@@ -98,7 +66,7 @@ export const ChatWindow: React.FC = () => {
     const cleaned = stripEmoji(text);
     if (!cleaned) return;
     try {
-      VoiceManager.stop?.();
+      VoiceManager.stop?.(); // cut off any other message currently playing
       setSpeakingId(id);
       await VoiceManager.speak(cleaned, voiceConfig, apiConfig.apiKey, true);
     } catch (err) {
@@ -144,16 +112,16 @@ export const ChatWindow: React.FC = () => {
         top: isFullscreen ? 0 : undefined,
         left: isFullscreen ? 0 : undefined,
         zIndex: isFullscreen ? 10000 : undefined,
-        background: c.bg,
+        background: "#151520",
         display: "flex",
         flexDirection: "column",
         borderRadius: isFullscreen ? 0 : "16px",
-        border: isFullscreen ? "none" : `1px solid ${c.border}`,
+        border: isFullscreen ? "none" : "1px solid rgba(255, 255, 255, 0.08)",
         overflow: "hidden",
         boxShadow: "0 20px 50px rgba(0,0,0,0.35)",
-        color: c.text,
-        fontFamily: SANS,
-        transition: "background 0.2s, color 0.2s, border-radius 0.15s",
+        color: "#ffffff",
+        fontFamily: "'Outfit', sans-serif",
+        transition: "border-radius 0.15s",
       }}
       onMouseEnter={() => window.electronAPI?.setChatIgnoreMouseEvents(false)}
       onMouseLeave={() => window.electronAPI?.setChatIgnoreMouseEvents(true)}
@@ -162,8 +130,8 @@ export const ChatWindow: React.FC = () => {
       <div
         style={{
           padding: "14px 18px",
-          background: c.headerBg,
-          borderBottom: `1px solid ${c.divider}`,
+          background: "#1e1e2d",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
@@ -180,7 +148,7 @@ export const ChatWindow: React.FC = () => {
                   ? "#2ecc71"
                   : pet.state === "thinking"
                     ? "#f1c40f"
-                    : c.accent,
+                    : "#3498db",
             }}
           />
           <span style={{ fontWeight: 650, fontSize: "0.95rem" }}>
@@ -189,8 +157,8 @@ export const ChatWindow: React.FC = () => {
           <span
             style={{
               fontSize: "0.75rem",
-              color: c.sub,
-              background: c.pillBg,
+              color: "#7f8c8d",
+              background: "rgba(255, 255, 255, 0.05)",
               padding: "2px 6px",
               borderRadius: "8px",
             }}
@@ -209,7 +177,7 @@ export const ChatWindow: React.FC = () => {
             style={{
               background: "none",
               border: "none",
-              color: isFullscreen ? c.accent : c.sub,
+              color: isFullscreen ? "#3498db" : "#95a5a6",
               cursor: "pointer",
               fontSize: "1rem",
             }}
@@ -222,7 +190,7 @@ export const ChatWindow: React.FC = () => {
             style={{
               background: "none",
               border: "none",
-              color: showSettings ? c.accent : c.sub,
+              color: showSettings ? "#3498db" : "#95a5a6",
               cursor: "pointer",
               fontSize: "1rem",
             }}
@@ -235,7 +203,7 @@ export const ChatWindow: React.FC = () => {
             style={{
               background: "none",
               border: "none",
-              color: c.sub,
+              color: "#95a5a6",
               cursor: "pointer",
               fontSize: "1.2rem",
               lineHeight: "1",
@@ -274,7 +242,7 @@ export const ChatWindow: React.FC = () => {
               left: 0,
               width: "100%",
               height: "100%",
-              background: c.overlayBg,
+              background: "#151522",
               zIndex: 100,
               padding: "16px",
               overflowY: "auto",
@@ -282,7 +250,6 @@ export const ChatWindow: React.FC = () => {
               flexDirection: "column",
               gap: "14px",
               fontSize: "0.85rem",
-              color: c.text,
             }}
           >
             <div
@@ -290,7 +257,7 @@ export const ChatWindow: React.FC = () => {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                borderBottom: `1px solid ${c.divider}`,
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
                 paddingBottom: "8px",
               }}
             >
@@ -302,7 +269,7 @@ export const ChatWindow: React.FC = () => {
                 style={{
                   background: "none",
                   border: "none",
-                  color: c.danger,
+                  color: "#e74c3c",
                   cursor: "pointer",
                   fontSize: "0.9rem",
                 }}
@@ -321,9 +288,9 @@ export const ChatWindow: React.FC = () => {
                   store.setApiConfig({ provider: e.target.value as any })
                 }
                 style={{
-                  background: c.inputBg,
-                  border: `1px solid ${c.inputBorder}`,
-                  color: c.text,
+                  background: "#2c2c3d",
+                  border: "1px solid #444",
+                  color: "#fff",
                   padding: "6px",
                   borderRadius: "6px",
                 }}
@@ -348,9 +315,9 @@ export const ChatWindow: React.FC = () => {
                     store.setApiConfig({ apiKey: e.target.value })
                   }
                   style={{
-                    background: c.inputBg,
-                    border: `1px solid ${c.inputBorder}`,
-                    color: c.text,
+                    background: "#2c2c3d",
+                    border: "1px solid #444",
+                    color: "#fff",
                     padding: "6px",
                     borderRadius: "6px",
                   }}
@@ -363,7 +330,7 @@ export const ChatWindow: React.FC = () => {
                 display: "flex",
                 flexDirection: "column",
                 gap: "8px",
-                borderTop: `1px solid ${c.divider}`,
+                borderTop: "1px solid rgba(255,255,255,0.06)",
                 paddingTop: "10px",
               }}
             >
@@ -386,9 +353,9 @@ export const ChatWindow: React.FC = () => {
                   store.setVoiceConfig({ ttsProvider: e.target.value as any })
                 }
                 style={{
-                  background: c.inputBg,
-                  border: `1px solid ${c.inputBorder}`,
-                  color: c.text,
+                  background: "#2c2c3d",
+                  border: "1px solid #444",
+                  color: "#fff",
                   padding: "6px",
                   borderRadius: "6px",
                 }}
@@ -405,7 +372,7 @@ export const ChatWindow: React.FC = () => {
             <div
               style={{
                 marginTop: "auto",
-                borderTop: `1px solid ${c.divider}`,
+                borderTop: "1px solid rgba(255,255,255,0.06)",
                 paddingTop: "12px",
               }}
             >
@@ -413,7 +380,7 @@ export const ChatWindow: React.FC = () => {
                 onClick={handleClearChat}
                 style={{
                   width: "100%",
-                  background: c.danger,
+                  background: "#e74c3c",
                   border: "none",
                   color: "white",
                   padding: "8px",
@@ -429,13 +396,13 @@ export const ChatWindow: React.FC = () => {
         )}
       </div>
 
-      {/* Input bar */}
+      {/* Input bar — voice input removed, text-only now */}
       <form
         onSubmit={handleSubmit}
         style={{
           padding: "12px 16px",
-          background: c.inputBarBg,
-          borderTop: `1px solid ${c.divider}`,
+          background: "#1c1c28",
+          borderTop: "1px solid rgba(255, 255, 255, 0.05)",
           display: "flex",
           gap: "8px",
           alignItems: "center",
@@ -450,11 +417,11 @@ export const ChatWindow: React.FC = () => {
           style={{
             flex: 1,
             minWidth: 0,
-            background: c.inputBg,
-            border: `1px solid ${c.inputBorder}`,
+            background: "rgba(255, 255, 255, 0.04)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
             borderRadius: "20px",
             padding: "8px 16px",
-            color: c.text,
+            color: "#fff",
             fontSize: "0.85rem",
             outline: "none",
           }}
@@ -464,8 +431,10 @@ export const ChatWindow: React.FC = () => {
           disabled={loading || !inputText.trim()}
           style={{
             background:
-              loading || !inputText.trim() ? c.pillBg : c.accent,
-            color: loading || !inputText.trim() ? c.sub : "#fff",
+              loading || !inputText.trim()
+                ? "rgba(255, 255, 255, 0.05)"
+                : "#3498db",
+            color: "#fff",
             border: "none",
             borderRadius: "50%",
             width: "34px",
