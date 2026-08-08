@@ -196,13 +196,46 @@ app.whenReady().then(async () => {
   bootstrapSkills();
 
   // ── TEMP: Step 3 verification — delete this block once confirmed ──
-  skillRegistry
-    .execute("filesystem.createFile", {
-      path: "kibo-test.txt",
-      content: "hello from step 3",
-    })
-    .then((result) => console.log("[TEST] createFile:", result))
-    .catch((err) => console.error("[TEST] createFile failed:", err));
+  // skillRegistry
+  //   .execute("filesystem.createFile", {
+  //     path: "kibo-test.txt",
+  //     content: "hello from step 3",
+  //   })
+  //   .then((result) => console.log("[TEST] createFile:", result))
+  //   .catch((err) => console.error("[TEST] createFile failed:", err));
+
+  //traversal
+  // skillRegistry
+  //   .execute("filesystem.readFile", { path: "../../../../Windows/System32/drivers/etc/hosts" })
+  //   .then((result) => console.log("[TEST] traversal:", result))
+  //   .catch((err) => console.error("[TEST] traversal threw:", err));
+
+
+  //rename
+  // skillRegistry
+  //   .execute("filesystem.renameFile", { path: "kibo-test.txt", newName: "kibo-renamed.txt" })
+  //   .then((result) => console.log("[TEST] rename:", result))
+  //   .catch((err) => console.error("[TEST] rename failed:", err));
+
+  //move
+  // skillRegistry
+  //   .execute("filesystem.moveFile", { source: "kibo-renamed.txt", destination: "Downloads/kibo-moved.txt", overwrite: false })
+  //   .then((result) => console.log("[TEST] move:", result))
+  //   .catch((err) => console.error("[TEST] move failed:", err));
+  //
+
+  //delete
+  // skillRegistry
+  //   .execute("filesystem.deleteFile", { path: "Downloads/kibo-moved.txt" })
+  //   .then((result) => console.log("[TEST] delete:", result))
+  //   .catch((err) => console.error("[TEST] delete failed:", err));
+  //
+
+  //search
+  // skillRegistry
+  //   .execute("filesystem.searchFiles", { root: ".", query: "kibo" })
+  //   .then((result) => console.log("[TEST] search:", result))
+  //   .catch((err) => console.error("[TEST] search failed:", err));
 
   createPetWindow();
   initTray();
