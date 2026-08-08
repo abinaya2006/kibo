@@ -15,9 +15,10 @@ import { EventBus } from "../services/EventBus";
  */
 
  // Ultra-fast testing
- const MIN_INTERVAL_MS = 2 * 1000;       // 2s
- const MAX_INTERVAL_MS = 5 * 1000;       // 5s
- const RETRY_DELAY_MS = 500;             // 0.5s
+ const RARE_EVENTS_ENABLED = false;
+ const MIN_INTERVAL_MS = 1000 * 1000;       // 2s
+ const MAX_INTERVAL_MS = 500 * 1000;       // 5s
+ const RETRY_DELAY_MS = 10000;             // 0.5s
  const WANDER_TICK_MS = 16;              // ~60 FPS
  const EVENT_LIFETIME_MS = 5 * 1000;     // 5s
  const CATCH_RADIUS = 34;
@@ -74,7 +75,8 @@ export class RareEventController {
 
   /** Call once (e.g. from PetRenderer's mount effect) to begin the cycle. */
   start() {
-    if (this.spawnTimer) return; // already running
+    if (!RARE_EVENTS_ENABLED) return;
+    if (this.spawnTimer) return;
     this.scheduleNext();
   }
 

@@ -16,10 +16,11 @@ import {
   clearMessages,
   closeDatabase,
 } from "./database/db.cjs";
-import { bootstrapSkills } from "./bootstrap.ts";
+import { bootstrapSkills,skillRegistry } from "./bootstrap.ts";
 
 let store = null;
 let tray = null;
+let skillRegistry = null;
 
 async function initStore() {
   try {
@@ -169,6 +170,24 @@ function registerIpcHandlers() {
     console.log("[MAIN] new chatWindow created:", !!newWin);
     sendContextToChat(newWin, selectedText);
   });
+
+  // ── Skills (Kibo Step 2) ─────────────────────────────────────────────────────
+  ipcMain.handle("skill:execute", async (_event, skillId, args) => {
+    if (!skillRegistry) {
+      return { success: false, error: "Skill registry not initialized" };
+    }
+    try {
+      return await skillRegistry.execute(skillId, args);
+    } catch (err) {
+      // SkillRegistry.execute should already return a structured
+      // SkillResult on failure — this only catches what escapes it
+      // (e.g. an unrecognized skillId thrown before that point).
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  });
 }
 
 app.whenReady().then(async () => {
@@ -185,6 +204,7 @@ app.whenReady().then(async () => {
     if (!getPetWindow()) createPetWindow();
   });
 });
+
 
 app.on("will-quit", () => {
   unregisterShortcut();

@@ -1,11 +1,9 @@
 const { contextBridge, ipcRenderer } = require("electron");
-
 contextBridge.exposeInMainWorld("electronAPI", {
   // ── Pet Persistence ─────────────────────────────────────────────────────────
   savePet: (data) => ipcRenderer.invoke("pet:save", data),
   loadPet: () => ipcRenderer.invoke("pet:load"),
   deletePet: () => ipcRenderer.invoke("pet:delete"),
-
   createSettingsWindow: () => ipcRenderer.invoke("window:create-settings"),
   closeSettingsWindow: () => ipcRenderer.invoke("window:close-settings"),
   // ── Window Management ──────────────────────────────────────────────────────
@@ -23,17 +21,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
   addMessage: (message) => ipcRenderer.invoke("db:add-message", { message }),
   clearHistory: (sessionId) =>
     ipcRenderer.invoke("db:clear-history", { sessionId }),
-
   // ── App & Utilities ────────────────────────────────────────────────────────
   quit: () => ipcRenderer.invoke("app:quit"),
-
+  // ── Skills (Kibo Step 2) ─────────────────────────────────────────────────────
+  executeSkill: (skillId, args) =>
+    ipcRenderer.invoke("skill:execute", skillId, args),
   // ── Selection capture listener ──────────────────────────────────────────────
   onSelectionCaptured: (callback) => {
     const sub = (_event, text) => callback(text);
     ipcRenderer.on("selection:captured", sub);
     return () => ipcRenderer.removeListener("selection:captured", sub);
   },
-
   // ── Generic extensions ──────────────────────────────────────────────────────
   send: (channel, data) => {
     ipcRenderer.send(channel, data);
