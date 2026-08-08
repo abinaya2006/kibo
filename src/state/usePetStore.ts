@@ -13,6 +13,8 @@ import type {
 } from "../models/types";
 import { createDefaultPet, computeMood, canTransition } from "../models/Pet";
 
+export type Theme = "light" | "dark";
+
 // ─── Store Interface ───────────────────────────────────────────────────────────
 
 interface PetStore {
@@ -24,6 +26,10 @@ interface PetStore {
   apiConfig: AIProviderConfig;
   voiceConfig: VoiceConfig;
   sessionId: string;
+
+  // Theme (synced across all windows)
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
 
   // Movement gating
   roamingEnabled: boolean;
@@ -113,6 +119,14 @@ const loadStoredVoiceConfig = (): VoiceConfig => {
   }
 };
 
+const loadStoredTheme = (): Theme => {
+  try {
+    const saved = localStorage.getItem("pixel-pet-theme");
+    if (saved === "light" || saved === "dark") return saved;
+  } catch {}
+  return "light";
+};
+
 // ─── Store Implementation ───────────────────────────────────────────────────────
 
 export const usePetStore = create<PetStore>()(
@@ -128,6 +142,14 @@ export const usePetStore = create<PetStore>()(
     voiceConfig: loadStoredVoiceConfig(),
     sessionId: crypto.randomUUID(),
 
+    theme: loadStoredTheme(),
+    setTheme: (theme) => {
+      try {
+        localStorage.setItem("pixel-pet-theme", theme);
+      } catch {}
+      set({ theme });
+    },
+
     roamingEnabled: false,
     setRoamingEnabled: (enabled) => set({ roamingEnabled: enabled }),
 
@@ -137,7 +159,6 @@ export const usePetStore = create<PetStore>()(
 
     rareEvent: null,
     setRareEvent: (event) => set({ rareEvent: event }),
-
 
     setPet: (pet) => set({ pet }),
 
@@ -281,6 +302,11 @@ if (typeof window !== "undefined") {
       try {
         usePetStore.setState({ voiceConfig: JSON.parse(e.newValue) });
       } catch {}
+    }
+    if (e.key === "pixel-pet-theme" && e.newValue) {
+      if (e.newValue === "light" || e.newValue === "dark") {
+        usePetStore.setState({ theme: e.newValue });
+      }
     }
   });
 }

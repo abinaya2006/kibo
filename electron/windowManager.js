@@ -78,8 +78,8 @@ export function createChatWindow() {
   const { width: screenWidth, height: screenHeight } =
     primaryDisplay.workAreaSize;
 
-  const width = 380;
-  const height = 600;
+  const width = 600;
+  const height = 450;
 
   chatWindow = new BrowserWindow({
     width,
@@ -138,12 +138,15 @@ export function createSettingsWindow() {
   const { width: screenWidth, height: screenHeight } =
     primaryDisplay.workAreaSize;
 
-  const width = 480;
-  const height = 620;
+  const width = 600;
+  const height = 450;
 
   settingsWindow = new BrowserWindow({
     width,
     height,
+    minWidth: 540,
+    minHeight: 500,
+    useContentSize: true,   // width/height apply to the content area, not OS chrome
     x: Math.round((screenWidth - width) / 2),
     y: Math.round((screenHeight - height) / 2),
     frame: false,
