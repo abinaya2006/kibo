@@ -20,7 +20,6 @@ import { bootstrapSkills, skillRegistry } from "./bootstrap.ts";
 
 let store = null;
 let tray = null;
-// let skillRegistry = null;
 
 async function initStore() {
   try {
@@ -195,6 +194,15 @@ app.whenReady().then(async () => {
   initDatabase(app);
   registerIpcHandlers();
   bootstrapSkills();
+
+  // ── TEMP: Step 3 verification — delete this block once confirmed ──
+  skillRegistry
+    .execute("filesystem.createFile", {
+      path: "kibo-test.txt",
+      content: "hello from step 3",
+    })
+    .then((result) => console.log("[TEST] createFile:", result))
+    .catch((err) => console.error("[TEST] createFile failed:", err));
 
   createPetWindow();
   initTray();
