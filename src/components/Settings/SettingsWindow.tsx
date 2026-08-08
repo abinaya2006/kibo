@@ -2,27 +2,70 @@ import React, { useEffect, useRef, useState } from "react";
 import { usePetStore } from "../../state/usePetStore";
 
 const DEFAULT_SHORTCUT = ["Alt", "Shift", "A"];
-
-const MONO = "'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace";
-const SANS = "'Outfit', 'Inter', sans-serif";
+const SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif";
 
 type SaveState = "idle" | "saving" | "saved";
 
 const GEMINI_MODELS = [
-  { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash — default" },
-  { value: "gemini-2.5-flash-preview-05-20", label: "Gemini 2.5 Flash — smarter" },
-  { value: "gemini-2.5-pro-preview-06-05", label: "Gemini 2.5 Pro — best" },
+  { value: "gemini-2.0-flash", label: "2.0 Flash" },
+  { value: "gemini-2.5-flash-preview-05-20", label: "2.5 Flash" },
+  { value: "gemini-2.5-pro-preview-06-05", label: "2.5 Pro" },
 ];
 
 const GROQ_MODELS = [
-  { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B — best quality" },
-  { value: "llama-3.1-8b-instant", label: "Llama 3.1 8B — fastest" },
-  { value: "mixtral-8x7b-32768", label: "Mixtral 8x7B — balanced" },
+  { value: "llama-3.3-70b-versatile", label: "Llama 3.3 70B" },
+  { value: "llama-3.1-8b-instant", label: "Llama 3.1 8B" },
+  { value: "mixtral-8x7b-32768", label: "Mixtral 8x7B" },
 ];
+
+const THEMES = {
+  light: {
+    bg: "#fbfbfb",
+    text: "#0d0d0d",
+    sub: "#8a8a8a",
+    border: "rgba(0,0,0,0.08)",
+    divider: "rgba(0,0,0,0.07)",
+    inputBg: "#fff",
+    inputBorder: "rgba(0,0,0,0.15)",
+    segBg: "#eee",
+    segActiveBg: "#fff",
+    segText: "#6b6b6b",
+    segActiveText: "#0d0d0d",
+    kbdBg: "#f0f0f0",
+    kbdBorder: "rgba(0,0,0,0.12)",
+    kbdText: "#333",
+    saveBg: "#0d0d0d",
+    saveText: "#fff",
+    cancelBg: "#fff",
+    cancelBorder: "rgba(0,0,0,0.12)",
+  },
+  dark: {
+    bg: "#1c1c1e",
+    text: "#f2f2f2",
+    sub: "#9a9a9a",
+    border: "rgba(255,255,255,0.08)",
+    divider: "rgba(255,255,255,0.08)",
+    inputBg: "#2a2a2d",
+    inputBorder: "rgba(255,255,255,0.14)",
+    segBg: "#2a2a2d",
+    segActiveBg: "#3c3c3f",
+    segText: "#9a9a9a",
+    segActiveText: "#f2f2f2",
+    kbdBg: "#2a2a2d",
+    kbdBorder: "rgba(255,255,255,0.14)",
+    kbdText: "#e0e0e0",
+    saveBg: "#f2f2f2",
+    saveText: "#1c1c1e",
+    cancelBg: "#2a2a2d",
+    cancelBorder: "rgba(255,255,255,0.14)",
+  },
+};
 
 export const SettingsWindow: React.FC = () => {
   const store = usePetStore();
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const theme = store.theme; // global, persisted, synced across windows
+  const c = THEMES[theme];
 
   const [apiProvider, setApiProvider] = useState(store.apiConfig.provider);
   const [apiKey, setApiKey] = useState(store.apiConfig.apiKey);
@@ -32,16 +75,11 @@ export const SettingsWindow: React.FC = () => {
   const [recording, setRecording] = useState(false);
 
   const rootRef = useRef<HTMLDivElement>(null);
-
   const modelOptions = apiProvider === "gemini" ? GEMINI_MODELS : GROQ_MODELS;
 
-  // ── Guard against a stored model value that doesn't exist in the current
-  // options list — a native <select> renders BLANK (no visible text) when its
-  // value doesn't match any <option>, which is one cause of "missing text". ──
   useEffect(() => {
     const valid = modelOptions.some((o) => o.value === model);
     if (!valid) setModel(modelOptions[0].value);
-    // run once on mount only
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -59,22 +97,11 @@ export const SettingsWindow: React.FC = () => {
     setTimeout(() => setSaveState("idle"), 2100);
   };
 
-  // ── Click outside to close ──────────────────────────────────────────────
-  // This is a separate frameless Electron window whose root fills the entire
-  // viewport, so a `document mousedown` listener never sees an "outside"
-  // click — every click lands inside rootRef. The correct signal for "the
-  // user clicked outside this window" is the window losing OS focus.
-  // We debounce briefly because opening a native <select> dropdown can itself
-  // trigger a transient blur/focus on some platforms; without the delay the
-  // panel would close the instant you open a dropdown.
   useEffect(() => {
     let blurTimeout: ReturnType<typeof setTimeout> | null = null;
-
     const onBlur = () => {
       if (recording) return;
-      blurTimeout = setTimeout(() => {
-        handleClose();
-      }, 150);
+      blurTimeout = setTimeout(() => handleClose(), 150);
     };
     const onFocus = () => {
       if (blurTimeout) {
@@ -82,7 +109,6 @@ export const SettingsWindow: React.FC = () => {
         blurTimeout = null;
       }
     };
-
     window.addEventListener("blur", onBlur);
     window.addEventListener("focus", onFocus);
     return () => {
@@ -92,7 +118,6 @@ export const SettingsWindow: React.FC = () => {
     };
   }, [recording]);
 
-  // ── Shortcut capture ────────────────────────────────────────────────────
   useEffect(() => {
     if (!recording) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -122,443 +147,269 @@ export const SettingsWindow: React.FC = () => {
     <div
       ref={rootRef}
       style={{
-        width: "100vw",
-        minWidth: "480px",
+        width: "100%",
+        minWidth: "540px",
+        maxWidth: "600px",
         height: "100vh",
-        background: "#15110c",
+        maxHeight: "100vh",
+        margin: "0 auto",
+        background: c.bg,
         fontFamily: SANS,
-        color: "#efe6d8",
+        color: c.text,
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
         userSelect: "none",
         borderRadius: "14px",
-        border: "1px solid rgba(217,161,91,0.16)",
+        border: `1px solid ${c.border}`,
         boxSizing: "border-box",
-        position: "relative",
-        colorScheme: "dark", // ← forces native controls (select/input) to render dark-theme text, fixing invisible text
+        boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+        transition: "background 0.2s, color 0.2s",
       }}
     >
       <style>{`
+        html, body, #root { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; }
         *, *::before, *::after { box-sizing: border-box; }
-
-        .rivet {
-          position: absolute;
-          width: 4px; height: 4px;
-          border-radius: 50%;
-          background: rgba(217,161,91,0.35);
-          box-shadow: inset 0 1px 1px rgba(0,0,0,0.4);
-        }
-
-        .kibo-scroll { scrollbar-width: thin; scrollbar-color: rgba(217,161,91,0.3) transparent; }
+        .kibo-scroll { scrollbar-width: thin; }
         .kibo-scroll::-webkit-scrollbar { width: 6px; }
         .kibo-scroll::-webkit-scrollbar-track { background: transparent; }
-        .kibo-scroll::-webkit-scrollbar-thumb { background: rgba(217,161,91,0.28); border-radius: 8px; }
-        .kibo-scroll::-webkit-scrollbar-thumb:hover { background: rgba(217,161,91,0.5); }
+        .kibo-scroll::-webkit-scrollbar-thumb { background: ${theme === "light" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)"}; border-radius: 8px; }
 
-        select.kibo-select {
-          -webkit-appearance: none;
-          appearance: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a3906c' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 10px center;
-          padding-right: 28px !important;
-          color: #efe6d8 !important;
-        }
-        select.kibo-select option {
-          background: #1c1712;
-          color: #efe6d8;
-        }
-        input.kibo-input {
-          color: #efe6d8 !important;
-          -webkit-text-fill-color: #efe6d8;
-        }
+        .segmented { display: inline-flex; flex-wrap: nowrap; background: ${c.segBg}; border-radius: 8px; padding: 2px; gap: 2px; max-width: 100%; }
+        .segmented button { border: none; background: transparent; padding: 5px 9px; font-size: 0.74rem; font-weight: 500; color: ${c.segText}; border-radius: 6px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+        .segmented button.active { background: ${c.segActiveBg}; color: ${c.segActiveText}; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
 
-        .save-btn {
-          position: relative;
-          overflow: hidden;
-          isolation: isolate;
-        }
-        .save-btn .save-fill {
-          position: absolute;
-          inset: 0;
-          left: -100%;
-          background: linear-gradient(90deg, rgba(217,161,91,0.0), rgba(217,161,91,0.55) 45%, rgba(217,161,91,0.0));
-          z-index: 0;
-        }
-        .save-btn.is-saving .save-fill {
-          animation: fillSweep 0.5s ease forwards;
-        }
-        .save-btn.is-saved {
-          transform: scale(1.03);
-        }
-        .save-btn.is-saved .save-fill { display: none; }
-        @keyframes fillSweep {
-          0% { left: -100%; }
-          100% { left: 0%; width: 100%; }
-        }
-        @keyframes labelIn {
-          0% { transform: translateY(60%); opacity: 0; }
-          100% { transform: translateY(0); opacity: 1; }
-        }
-        .save-label {
-          position: relative;
-          z-index: 1;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          animation: labelIn 0.22s ease;
-        }
-        .save-pulse-dot {
-          width: 5px; height: 5px; border-radius: 50%;
-          background: currentColor;
-        }
-        .save-btn.is-saving .save-pulse-dot {
-          animation: dotBounce 0.5s ease-in-out infinite;
-        }
-        @keyframes dotBounce {
-          0%, 100% { transform: scale(0.6); opacity: 0.5; }
-          50% { transform: scale(1.15); opacity: 1; }
-        }
+        input.kibo-input { color: ${c.text}; font-family: inherit; background: ${c.inputBg}; border-color: ${c.inputBorder}; }
+        input.kibo-input::placeholder { color: ${c.sub}; }
 
         @keyframes recordBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
         .recording-dot { animation: recordBlink 1s ease-in-out infinite; }
-      `}</style>
 
-      <span className="rivet" style={{ top: "9px", left: "9px" }} />
-      <span className="rivet" style={{ top: "9px", right: "9px" }} />
-      <span className="rivet" style={{ bottom: "9px", left: "9px" }} />
-      <span className="rivet" style={{ bottom: "9px", right: "9px" }} />
+        .theme-toggle { display: flex; background: ${c.segBg}; border-radius: 999px; padding: 2px; gap: 2px; }
+        .theme-toggle button { border: none; background: transparent; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: ${c.segText}; }
+        .theme-toggle button.active { background: ${c.segActiveBg}; color: ${c.segActiveText}; }
+      `}</style>
 
       {/* Title bar */}
       <div
         style={
           {
             WebkitAppRegion: "drag",
-            padding: "14px 22px 10px",
+            padding: "16px 20px 4px",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            flexShrink: 0,
           } as React.CSSProperties
         }
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-          <IconSettings />
-          <span
-            style={{
-              fontWeight: 600,
-              fontSize: "0.86rem",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "#efe6d8",
-              fontFamily: MONO,
-              whiteSpace: "nowrap",
-            }}
-          >
-            Kibo · AI Config
-          </span>
+        <span style={{ fontWeight: 600, fontSize: "0.98rem" }}>Preferences</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+          <div className="theme-toggle">
+            <button className={theme === "light" ? "active" : ""} onClick={() => store.setTheme("light")} title="Light">
+              <IconSun />
+            </button>
+            <button className={theme === "dark" ? "active" : ""} onClick={() => store.setTheme("dark")} title="Dark">
+              <IconMoon />
+            </button>
+          </div>
+          <button onClick={handleClose} style={{ ...closeButtonStyle, color: c.sub } as React.CSSProperties}>
+            <IconClose />
+          </button>
         </div>
-        <button onClick={handleClose} style={closeButtonStyle as React.CSSProperties}>
-          <IconClose />
-        </button>
       </div>
 
-      {/* Grid */}
-      <div
-        className="kibo-scroll"
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          overflowX: "hidden",
-          padding: "0 22px 16px",
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
-          gap: "8px",
-          alignContent: "start",
-        }}
-      >
-        <Cell icon={<IconProvider />} label="Provider">
-          <Select
-            value={apiProvider}
-            onChange={(v) => {
-              setApiProvider(v);
-              if (v === "gemini") setModel(GEMINI_MODELS[0].value);
-              if (v === "groq") setModel(GROQ_MODELS[0].value);
-            }}
-            options={[
-              { value: "gemini", label: "Google Gemini" },
+      {/* Rows */}
+      <div className="kibo-scroll" style={{ flex: "0 1 auto", minHeight: 0, overflowY: "auto", padding: "4px 20px 4px" }}>
+        <Row title="Provider" desc="Which AI service powers Kibo" c={c}>
+          <div className="segmented">
+            {[
+              { value: "gemini", label: "Gemini" },
               { value: "groq", label: "Groq" },
-            ]}
-          />
-        </Cell>
+            ].map((o) => (
+              <button
+                key={o.value}
+                className={apiProvider === o.value ? "active" : ""}
+                onClick={() => {
+                  setApiProvider(o.value as any);
+                  if (o.value === "gemini") setModel(GEMINI_MODELS[0].value);
+                  if (o.value === "groq") setModel(GROQ_MODELS[0].value);
+                }}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </Row>
 
-        <Cell icon={<IconModel />} label="Model">
-          <Select value={model} onChange={setModel} options={modelOptions} />
-        </Cell>
+        <Row title="Model" desc="Speed vs. response quality" c={c}>
+          <div className="segmented">
+            {modelOptions.map((o) => (
+              <button key={o.value} className={model === o.value ? "active" : ""} onClick={() => setModel(o.value)}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </Row>
 
-        <Cell icon={<IconKey />} label="API Key" span={2}>
+        <Row title="API Key" desc="Stored locally, never shared" c={c}>
           <input
             type="password"
             className="kibo-input"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder="Paste your key"
-            style={inputStyle}
+            style={{ ...inputStyle, width: "100%" }}
           />
-          <div style={hintStyle}>Stored locally. Only sent to your chosen provider.</div>
-        </Cell>
+        </Row>
 
-        <Cell icon={<IconKeyboard />} label="Shortcut" span={2} muted>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0, flexWrap: "wrap" }}>
-              {recording ? (
-                <span style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", color: "#cc7a6f" }}>
-                  <span className="recording-dot" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#cc7a6f" }} />
-                  Press any key combo… (Esc to cancel)
-                </span>
-              ) : (
-                shortcut.map((k, i) => (
+        <Row title="Shortcut" desc={recording ? undefined : "Reads highlighted text aloud"} c={c} last>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            {recording ? (
+              <span style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.78rem", color: "#d1453b" }}>
+                <span className="recording-dot" style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#d1453b" }} />
+                Press any key…
+              </span>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                {shortcut.map((k, i) => (
                   <React.Fragment key={k + i}>
-                    {i > 0 && <span style={{ color: "#6b5c45", fontSize: "0.78rem" }}>+</span>}
-                    <kbd style={kbdStyle}>{k}</kbd>
+                    {i > 0 && <span style={{ color: c.sub, fontSize: "0.74rem" }}>+</span>}
+                    <kbd style={{ ...kbdStyle, background: c.kbdBg, borderColor: c.kbdBorder, color: c.kbdText }}>{k}</kbd>
                   </React.Fragment>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
             <button
               onClick={() => setRecording(true)}
               disabled={recording}
-              style={{ ...changeShortcutButtonStyle, opacity: recording ? 0.5 : 1, cursor: recording ? "default" : "pointer" }}
+              style={{
+                ...pillButtonStyle,
+                background: c.inputBg,
+                borderColor: c.inputBorder,
+                color: c.text,
+                opacity: recording ? 0.5 : 1,
+                cursor: recording ? "default" : "pointer",
+              }}
             >
               Change
             </button>
           </div>
-          {!recording && (
-            <div style={{ fontSize: "0.72rem", color: "#8f8069", marginTop: "6px", lineHeight: 1.5 }}>
-              Highlight any text, then press this to have Kibo read it aloud.
-            </div>
-          )}
-        </Cell>
+        </Row>
       </div>
 
       {/* Footer */}
       <div
         style={{
-          padding: "10px 22px",
-          borderTop: "1px solid rgba(217,161,91,0.1)",
+          padding: "14px 20px",
+          borderTop: `1px solid ${c.border}`,
           display: "flex",
           justifyContent: "flex-end",
           gap: "8px",
+          flexShrink: 0,
         }}
       >
-        <button onClick={handleClose} style={secondaryButtonStyle}>
+        <button onClick={handleClose} style={{ ...secondaryButtonStyle, background: c.cancelBg, borderColor: c.cancelBorder, color: c.text }}>
           Cancel
         </button>
         <button
           onClick={handleSave}
-          className={`save-btn${saveState !== "idle" ? ` is-${saveState}` : ""}`}
           style={{
             ...primaryButtonStyle,
-            background:
-              saveState === "saved"
-                ? "#8fbf7f"
-                : saveState === "saving"
-                ? "rgba(217,161,91,0.22)"
-                : "rgba(217,161,91,0.14)",
-            borderColor: saveState === "saved" ? "#8fbf7f" : "rgba(217,161,91,0.4)",
-            color: saveState === "saved" ? "#15110c" : "#e3bd85",
+            background: saveState === "saved" ? "#22a55e" : c.saveBg,
+            color: saveState === "saved" ? "#fff" : c.saveText,
+            opacity: saveState === "saving" ? 0.7 : 1,
           }}
         >
-          <span className="save-fill" />
-          <span className="save-label" key={saveState}>
-            {saveState === "saving" && (
-              <>
-                <span className="save-pulse-dot" /> Saving
-              </>
-            )}
-            {saveState === "saved" && "Saved"}
-            {saveState === "idle" && "Save Changes"}
-          </span>
+          {saveState === "saving" && "Saving…"}
+          {saveState === "saved" && "Saved"}
+          {saveState === "idle" && "Save Changes"}
         </button>
       </div>
     </div>
   );
 };
 
-// ─── Cell ─────────────────────────────────────────────────────────────────
+// ─── Row ─────────────────────────────────────────────────────────────────
 
-const Cell: React.FC<{
-  icon: React.ReactNode;
-  label: string;
-  span?: 1 | 2;
-  muted?: boolean;
-  children: React.ReactNode;
-}> = ({ icon, label, span = 1, muted, children }) => (
-  <div
-    style={{
-      gridColumn: span === 2 ? "span 2" : "span 1",
-      minWidth: 0,
-      background: muted ? "rgba(217,161,91,0.02)" : "rgba(217,161,91,0.035)",
-      border: "1px solid rgba(217,161,91,0.1)",
-      borderRadius: "10px",
-      padding: "10px 12px",
-      overflow: "hidden",
-    }}
-  >
-    <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
-      <span style={{ color: "#c99a5b", display: "flex" }}>{icon}</span>
-      <span
-        style={{
-          fontSize: "0.63rem",
-          fontWeight: 600,
-          color: "#8f8069",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          fontFamily: MONO,
-        }}
-      >
-        {label}
-      </span>
-    </div>
-    {children}
+const Row: React.FC<{ title: string; desc?: string; c: typeof THEMES.light; children: React.ReactNode; last?: boolean }> = ({
+  title,
+  desc,
+  c,
+  children,
+  last,
+}) => (
+  <div style={{ padding: "8px 2px", borderBottom: last ? "none" : `1px solid ${c.divider}` }}>
+    <div style={{ fontSize: "0.86rem", fontWeight: 500 }}>{title}</div>
+    {desc && <div style={{ fontSize: "0.72rem", color: c.sub, marginTop: "1px", marginBottom: "6px" }}>{desc}</div>}
+    <div style={{ marginTop: desc ? 0 : "6px" }}>{children}</div>
   </div>
-);
-
-// ─── Select ─────────────────────────────────────────────────────────────────
-
-const Select: React.FC<{
-  value: string;
-  onChange: (v: any) => void;
-  options: { value: string; label: string }[];
-}> = ({ value, onChange, options }) => (
-  <select
-    className="kibo-select"
-    value={value}
-    onChange={(e) => onChange(e.target.value)}
-    style={{ ...inputStyle, cursor: "pointer", colorScheme: "dark" }}
-  >
-    {options.map((o) => (
-      <option key={o.value} value={o.value} style={{ background: "#1c1712", color: "#efe6d8" }}>
-        {o.label}
-      </option>
-    ))}
-  </select>
 );
 
 // ─── Icons ────────────────────────────────────────────────────────────────
 
-const iconProps = { width: 14, height: 14, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-
-const IconSettings = () => (
-  <svg {...iconProps} width={16} height={16}>
-    <circle cx="12" cy="12" r="3" />
-    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-  </svg>
-);
 const IconClose = () => (
-  <svg {...iconProps} width={12} height={12}>
+  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
     <path d="M18 6 6 18M6 6l12 12" />
   </svg>
 );
-const IconProvider = () => (
-  <svg {...iconProps}>
-    <rect x="3" y="4" width="18" height="16" rx="2" />
-    <path d="M3 9h18M8 4v5" />
+const IconSun = () => (
+  <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
   </svg>
 );
-const IconModel = () => (
-  <svg {...iconProps}>
-    <path d="M12 2 2 7l10 5 10-5-10-5Z" />
-    <path d="M2 17l10 5 10-5M2 12l10 5 10-5" />
-  </svg>
-);
-const IconKey = () => (
-  <svg {...iconProps}>
-    <circle cx="7.5" cy="15.5" r="4.5" />
-    <path d="m10.5 12.5 8-8M16 8l2 2M19 5l2 2" />
-  </svg>
-);
-const IconKeyboard = () => (
-  <svg {...iconProps}>
-    <rect x="2" y="6" width="20" height="12" rx="2" />
-    <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h12" />
+const IconMoon = () => (
+  <svg width={12} height={12} viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
   </svg>
 );
 
 // ─── Styles ─────────────────────────────────────────────────────────────────
 
 const inputStyle: React.CSSProperties = {
-  width: "100%",
-  maxWidth: "100%",
-  minWidth: 0,
-  display: "block",
-  background: "rgba(0,0,0,0.22)",
-  border: "1px solid rgba(217,161,91,0.16)",
-  borderRadius: "7px",
+  border: "1px solid",
+  borderRadius: "8px",
   padding: "7px 10px",
-  color: "#efe6d8",
-  fontFamily: SANS,
-  fontSize: "0.79rem",
+  fontSize: "0.82rem",
   outline: "none",
   boxSizing: "border-box",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-};
-
-const hintStyle: React.CSSProperties = {
-  fontSize: "0.65rem",
-  color: "#6f6350",
-  marginTop: "6px",
 };
 
 const primaryButtonStyle: React.CSSProperties = {
-  padding: "7px 18px",
-  borderRadius: "7px",
-  border: "1px solid rgba(217,161,91,0.4)",
-  background: "rgba(217,161,91,0.14)",
-  color: "#e3bd85",
-  fontFamily: SANS,
-  fontSize: "0.79rem",
-  fontWeight: 600,
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  gap: "6px",
-  transition: "all 0.15s",
-};
-
-const secondaryButtonStyle: React.CSSProperties = {
   padding: "7px 16px",
-  borderRadius: "7px",
-  border: "1px solid transparent",
-  background: "transparent",
-  color: "#a3906c",
+  borderRadius: "8px",
+  border: "none",
   fontFamily: SANS,
-  fontSize: "0.79rem",
+  fontSize: "0.82rem",
   fontWeight: 500,
   cursor: "pointer",
 };
 
-const changeShortcutButtonStyle: React.CSSProperties = {
-  padding: "4px 10px",
-  borderRadius: "6px",
-  border: "1px solid rgba(217,161,91,0.25)",
-  background: "rgba(217,161,91,0.08)",
-  color: "#d9a15b",
+const secondaryButtonStyle: React.CSSProperties = {
+  padding: "7px 14px",
+  borderRadius: "8px",
+  border: "1px solid",
   fontFamily: SANS,
-  fontSize: "0.67rem",
-  fontWeight: 600,
+  fontSize: "0.82rem",
+  fontWeight: 500,
+  cursor: "pointer",
+};
+
+const pillButtonStyle: React.CSSProperties = {
+  padding: "4px 10px",
+  borderRadius: "999px",
+  border: "1px solid",
+  fontFamily: SANS,
+  fontSize: "0.72rem",
+  fontWeight: 500,
   whiteSpace: "nowrap",
   flexShrink: 0,
 };
 
 const closeButtonStyle = {
-  WebkitAppRegion: "no-drag",
-  background: "rgba(217,161,91,0.06)",
+  background: "transparent",
   border: "none",
-  color: "#a3906c",
   borderRadius: "7px",
   width: "24px",
   height: "24px",
@@ -570,13 +421,11 @@ const closeButtonStyle = {
 };
 
 const kbdStyle: React.CSSProperties = {
-  background: "rgba(217,161,91,0.08)",
-  border: "1px solid rgba(217,161,91,0.2)",
+  border: "1px solid",
   borderRadius: "5px",
   padding: "2px 6px",
   fontSize: "0.68rem",
-  fontFamily: MONO,
-  color: "#d9c9a8",
+  fontFamily: "monospace",
 };
 
 export default SettingsWindow;
