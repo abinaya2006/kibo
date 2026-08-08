@@ -3,6 +3,7 @@ import { usePetStore } from "../../state/usePetStore";
 
 const DEFAULT_SHORTCUT = ["Alt", "Shift", "A"];
 const SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif";
+const MONO = "'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace";
 
 type SaveState = "idle" | "saving" | "saved";
 
@@ -38,6 +39,10 @@ const THEMES = {
     saveText: "#fff",
     cancelBg: "#fff",
     cancelBorder: "rgba(0,0,0,0.12)",
+    lockedBg: "#f2f2f2",
+    lockedBorder: "rgba(0,0,0,0.1)",
+    lockedText: "#4a4a4a",
+    dot: "#a8a8a8",
   },
   dark: {
     bg: "#1c1c1e",
@@ -58,6 +63,10 @@ const THEMES = {
     saveText: "#1c1c1e",
     cancelBg: "#2a2a2d",
     cancelBorder: "rgba(255,255,255,0.14)",
+    lockedBg: "#242426",
+    lockedBorder: "rgba(255,255,255,0.1)",
+    lockedText: "#c8c8c8",
+    dot: "#666",
   },
 };
 
@@ -70,6 +79,10 @@ export const SettingsWindow: React.FC = () => {
   const [apiProvider, setApiProvider] = useState(store.apiConfig.provider);
   const [apiKey, setApiKey] = useState(store.apiConfig.apiKey);
   const [model, setModel] = useState(store.apiConfig.model);
+
+  // Codex-style key field: locked/read-only display once a key exists.
+  // Editing means typing a fresh value — the stored key is never rendered.
+  const [editingKey, setEditingKey] = useState(!store.apiConfig.apiKey);
 
   const [shortcut, setShortcut] = useState<string[]>(store.shortcut ?? DEFAULT_SHORTCUT);
   const [recording, setRecording] = useState(false);
@@ -93,6 +106,7 @@ export const SettingsWindow: React.FC = () => {
     store.setApiConfig({ provider: apiProvider, apiKey, model, temperature: store.apiConfig.temperature });
     store.setShortcut?.(shortcut);
     setSaveState("saving");
+    if (apiKey.trim()) setEditingKey(false);
     setTimeout(() => setSaveState("saved"), 500);
     setTimeout(() => setSaveState("idle"), 2100);
   };
@@ -179,8 +193,8 @@ export const SettingsWindow: React.FC = () => {
         .segmented button { border: none; background: transparent; padding: 5px 9px; font-size: 0.74rem; font-weight: 500; color: ${c.segText}; border-radius: 6px; cursor: pointer; font-family: inherit; white-space: nowrap; }
         .segmented button.active { background: ${c.segActiveBg}; color: ${c.segActiveText}; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
 
-        input.kibo-input { color: ${c.text}; font-family: inherit; background: ${c.inputBg}; border-color: ${c.inputBorder}; }
-        input.kibo-input::placeholder { color: ${c.sub}; }
+        input.kibo-input { color: ${c.text}; font-family: ${MONO}; background: ${c.inputBg}; border-color: ${c.inputBorder}; }
+        input.kibo-input::placeholder { color: ${c.sub}; font-family: ${SANS}; }
 
         @keyframes recordBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
         .recording-dot { animation: recordBlink 1s ease-in-out infinite; }
@@ -188,6 +202,12 @@ export const SettingsWindow: React.FC = () => {
         .theme-toggle { display: flex; background: ${c.segBg}; border-radius: 999px; padding: 2px; gap: 2px; }
         .theme-toggle button { border: none; background: transparent; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; color: ${c.segText}; }
         .theme-toggle button.active { background: ${c.segActiveBg}; color: ${c.segActiveText}; }
+
+        .key-locked { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: ${c.lockedBg}; border: 1px solid ${c.lockedBorder}; border-radius: 8px; padding: 7px 10px; }
+        .key-dots { display: flex; align-items: center; gap: 3px; }
+        .key-dots span { width: 4px; height: 4px; border-radius: 50%; background: ${c.dot}; display: inline-block; }
+        .key-edit-btn { border: 1px solid ${c.inputBorder}; background: ${c.inputBg}; color: ${c.text}; font-family: ${SANS}; font-size: 0.72rem; font-weight: 500; border-radius: 999px; padding: 4px 10px; cursor: pointer; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+        .key-edit-btn:hover { opacity: 0.8; }
       `}</style>
 
       {/* Title bar */}
@@ -253,14 +273,50 @@ export const SettingsWindow: React.FC = () => {
         </Row>
 
         <Row title="API Key" desc="Stored locally, never shared" c={c}>
-          <input
-            type="password"
-            className="kibo-input"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder="Paste your key"
-            style={{ ...inputStyle, width: "100%" }}
-          />
+          {!editingKey && apiKey ? (
+            <div className="key-locked">
+              <div className="key-dots">
+                {Array.from({ length: 14 }).map((_, i) => (
+                  <span key={i} />
+                ))}
+              </div>
+              <button
+                type="button"
+                className="key-edit-btn"
+                onClick={() => {
+                  setApiKey("");
+                  setEditingKey(true);
+                }}
+              >
+                <IconPencil />
+                Edit
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <input
+                type="password"
+                className="kibo-input"
+                autoFocus={editingKey}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Paste your key"
+                style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+              />
+              {store.apiConfig.apiKey && (
+                <button
+                  type="button"
+                  className="key-edit-btn"
+                  onClick={() => {
+                    setApiKey(store.apiConfig.apiKey);
+                    setEditingKey(false);
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          )}
         </Row>
 
         <Row title="Shortcut" desc={recording ? undefined : "Reads highlighted text aloud"} c={c} last>
@@ -362,6 +418,12 @@ const IconSun = () => (
 const IconMoon = () => (
   <svg width={12} height={12} viewBox="0 0 24 24" fill="currentColor" stroke="none">
     <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" />
+  </svg>
+);
+const IconPencil = () => (
+  <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
   </svg>
 );
 
